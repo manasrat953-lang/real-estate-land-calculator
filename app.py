@@ -14,31 +14,26 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    /* Dark Theme Core Styles */
+    /* Force all text white for maximum readability on dark background */
+    .stApp, .stText, .stMarkdown, p, span, label, div, h1, h2, h3, h4, h5, h6 {
+        color: #FFFFFF !important;
+    }
     .stApp {
         background-color: #0F172A;
-        color: #F8FAFC;
     }
     .stSidebar {
         background-color: #1E293B;
         border-right: 1px solid #334155;
     }
-    .brand-header {
-        font-size: 2.2rem;
-        font-weight: 800;
-        color: #E2E8F0;
-        margin-bottom: 0px;
-        letter-spacing: -0.5px;
-    }
     .brand-sub {
         font-size: 0.95rem;
-        color: #94A3B8;
+        color: #94A3B8 !important;
         font-weight: 500;
         margin-bottom: 1.5rem;
     }
     .powered-by {
         font-size: 0.85rem;
-        color: #94A3B8;
+        color: #94A3B8 !important;
         text-align: right;
         font-style: italic;
         padding-top: 10px;
@@ -53,24 +48,26 @@ st.markdown("""
         color: #38BDF8 !important;
         font-size: 1.6rem !important;
     }
-    /* Dark Theme Table Customization */
     .dataframe {
-        color: #F8FAFC !important;
+        color: #FFFFFF !important;
         background-color: #1E293B !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# Header & Branding Section
+# Header & Branding Section (Using Official Logo)
 # ---------------------------------------------------------
-col_title, col_logo = st.columns([3, 1])
-with col_title:
-    st.markdown('<div class="brand-header">MADINET MASR</div>', unsafe_allow_html=True)
-    st.markdown('<div class="brand-sub">Real Estate Land Feasibility & Masterplan Analytics Engine</div>', unsafe_allow_html=True)
+col_logo, col_powered = st.columns([3, 1])
 with col_logo:
+    try:
+        st.image("LOGO.png", width=280)
+    except Exception:
+        st.markdown('<div style="font-size: 2rem; font-weight: 800; color: #FFFFFF;">MADINET MASR</div>', unsafe_allow_html=True)
+with col_powered:
     st.markdown('<div class="powered-by">Powered by <b>Madinet Masr</b></div>', unsafe_allow_html=True)
 
+st.markdown('<div class="brand-sub">Real Estate Land Feasibility & Masterplan Analytics Engine</div>', unsafe_allow_html=True)
 st.markdown("---")
 
 # ---------------------------------------------------------
@@ -78,13 +75,11 @@ st.markdown("---")
 # ---------------------------------------------------------
 st.sidebar.markdown("### 🔴 Input Parameters (Red Cells)")
 
-# Land Data Inputs
 st.sidebar.subheader("1. Land Data")
 gla_feddans = st.sidebar.number_input("GLA in feddans", value=214.19347, step=1.0, format="%.5f")
 efficiency = st.sidebar.slider("Efficiency Ratio", min_value=0.1, max_value=1.0, value=0.9, step=0.01)
 land_type = st.sidebar.selectbox("Land Type", ["Mixed Use", "Residential", "Commercial"])
 
-# Land Analysis Inputs
 st.sidebar.subheader("2. Land Analysis Breakdown")
 res_pct_nla = st.sidebar.slider("Residential % from NLA", 0.0, 1.0, 0.50, 0.01)
 serv_pct_nla = st.sidebar.slider("Services % from NLA", 0.0, 1.0, 0.15, 0.01)
@@ -93,7 +88,6 @@ landscape_pct_nla = 1.0 - res_pct_nla - serv_pct_nla
 res_plot_pct = st.sidebar.slider("Residential Plot % from Total Land", 0.0, 1.0, 0.50, 0.01)
 serv_plot_pct = st.sidebar.slider("Services Plot % from Total Land", 0.0, 1.0, 0.30, 0.01)
 
-# Constraints Inputs
 st.sidebar.subheader("3. Land Constraints")
 res_floors = st.sidebar.number_input("Residential Floors", value=5, step=1)
 serv_floors = st.sidebar.number_input("Services Floors", value=4, step=1)
@@ -101,7 +95,6 @@ allowed_fp_pct = st.sidebar.number_input("Allowed Footprint %", value=0.25, step
 allowed_far = st.sidebar.number_input("Allowed FAR", value=1.25, step=0.05)
 design_contingency = st.sidebar.number_input("Design Contingency", value=0.0, step=0.01)
 
-# Mix Inputs
 st.sidebar.subheader("4. Residential Plot Mix")
 apt_mix = st.sidebar.slider("Apartments Mix %", 0.0, 1.0, 0.60, 0.05)
 villa_mix = st.sidebar.slider("Villas Mix %", 0.0, 1.0, 0.10, 0.05)
@@ -125,22 +118,18 @@ gla_sqm = gla_feddans * SQM_PER_FEDDAN
 nla_feddans = gla_feddans * efficiency
 nla_sqm = gla_sqm * efficiency
 
-# Land Analysis
 total_res_land = nla_sqm * res_pct_nla
 total_res_plots = total_res_land * res_plot_pct
 total_serv_land = nla_sqm * serv_pct_nla
 total_serv_plots = total_serv_land * serv_plot_pct
 total_landscape_land = nla_sqm * landscape_pct_nla
 
-# Constraints
 allowed_footprint = gla_sqm * allowed_fp_pct
 allowed_bua = gla_sqm * allowed_far
 
-# Contingency
 res_plots_after_cont = total_res_plots * (1.0 - design_contingency)
 serv_plots_after_cont = total_serv_plots * (1.0 - design_contingency)
 
-# Residential Mix Calculations
 apt_plots = res_plots_after_cont * apt_mix
 villa_plots = res_plots_after_cont * villa_mix
 th_plots = res_plots_after_cont * th_mix
@@ -157,7 +146,6 @@ res_subtotal_bua = apt_bua + villa_bua + th_bua
 local_services_land = total_res_land * 0.02
 total_res_achieved_bua = res_subtotal_bua + local_services_land
 
-# Services Mix Calculations
 admin_plots = serv_plots_after_cont * admin_mix
 comm_plots = serv_plots_after_cont * comm_mix
 
@@ -170,7 +158,6 @@ comm_bua = comm_fp * serv_floors
 total_serv_achieved_bua = admin_bua + comm_bua
 total_serv_achieved_fp = admin_fp + comm_fp
 
-# Overall Summaries & Checkers
 total_achieved_bua = total_res_achieved_bua + total_serv_achieved_bua
 total_achieved_fp = (apt_fp + villa_fp + th_fp + local_services_land) + total_serv_achieved_fp
 
