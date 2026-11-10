@@ -75,15 +75,40 @@ st.markdown("---")
 # ---------------------------------------------------------
 st.sidebar.markdown("### 🔴 Input Parameters (Red Cells)")
 
-st.sidebar.subheader("1. Land Data")
-gla_feddans = st.sidebar.number_input("GLA in feddans", value=214.19347, step=1.0, format="%.5f")
+# Dynamic Area Conversions Engine
+st.sidebar.subheader("1. Land Data Input Mode")
+input_type = st.sidebar.radio("Primary Area Input", ["GLA", "NLA"], horizontal=True)
+unit_type = st.sidebar.radio("Unit Type", ["Feddans", "SQM"], horizontal=True)
+
 efficiency = st.sidebar.slider("Efficiency Ratio", min_value=0.1, max_value=1.0, value=0.9, step=0.01)
+
+SQM_PER_FEDDAN = 4200.0
+
+if input_type == "GLA":
+    if unit_type == "Feddans":
+        gla_feddans = st.sidebar.number_input("GLA in feddans", value=214.19347, step=1.0, format="%.5f")
+        gla_sqm = gla_feddans * SQM_PER_FEDDAN
+    else:
+        gla_sqm = st.sidebar.number_input("GLA in SQM", value=899612.57, step=1000.0, format="%.2f")
+        gla_feddans = gla_sqm / SQM_PER_FEDDAN
+    nla_sqm = gla_sqm * efficiency
+    nla_feddans = gla_feddans * efficiency
+else:
+    if unit_type == "Feddans":
+        nla_feddans = st.sidebar.number_input("NLA in feddans", value=192.77412, step=1.0, format="%.5f")
+        nla_sqm = nla_feddans * SQM_PER_FEDDAN
+    else:
+        nla_sqm = st.sidebar.number_input("NLA in SQM", value=809651.32, step=1000.0, format="%.2f")
+        nla_feddans = nla_sqm / SQM_PER_FEDDAN
+    gla_sqm = nla_sqm / efficiency if efficiency > 0 else 0
+    gla_feddans = nla_feddans / efficiency if efficiency > 0 else 0
+
 land_type = st.sidebar.selectbox("Land Type", ["Mixed Use", "Residential", "Commercial"])
 
 st.sidebar.subheader("2. Land Analysis Breakdown")
 res_pct_nla = st.sidebar.slider("Residential % from NLA", 0.0, 1.0, 0.50, 0.01)
 serv_pct_nla = st.sidebar.slider("Services % from NLA", 0.0, 1.0, 0.15, 0.01)
-landscape_pct_nla = 1.0 - res_pct_nla - serv_pct_nla
+landscape_pct_nla = max(0.0, 1.0 - res_pct_nla - serv_pct_nla)
 
 res_plot_pct = st.sidebar.slider("Residential Plot % from Total Land", 0.0, 1.0, 0.50, 0.01)
 serv_plot_pct = st.sidebar.slider("Services Plot % from Total Land", 0.0, 1.0, 0.30, 0.01)
@@ -113,11 +138,6 @@ three_br_pct = max(0.0, 1.0 - studio_pct - one_br_pct - two_br_pct)
 # ---------------------------------------------------------
 # Core Real-Time Calculation Engine
 # ---------------------------------------------------------
-SQM_PER_FEDDAN = 4200.0
-gla_sqm = gla_feddans * SQM_PER_FEDDAN
-nla_feddans = gla_feddans * efficiency
-nla_sqm = gla_sqm * efficiency
-
 total_res_land = nla_sqm * res_pct_nla
 total_res_plots = total_res_land * res_plot_pct
 total_serv_land = nla_sqm * serv_pct_nla
