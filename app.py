@@ -18,7 +18,7 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
 
     /* Global Typography & Black Background Override */
-    html, body, [class*="css"], .stApp, .stText, .stMarkdown, p, span, label, div, h1, h2, h3, h4, h5, h6, button, input {
+    html, body, [class*="css"], .stApp, .stText, .stMarkdown, p, span, label, div, h1, h2, h3, h4, h5, h6, button {
         font-family: 'Montserrat', 'Helvetica Neue', Arial, sans-serif !important;
         color: #FFFFFF !important;
     }
@@ -30,26 +30,28 @@ st.markdown("""
         border-right: 1px solid #222222 !important;
     }
 
-    /* Force Streamlit Header & Sidebar Toggle Controls to be ALWAYS Visible */
+    /* Dark Input Box Styling - Fix White-on-White Issue */
+    div[data-baseweb="input"], div[data-baseweb="select"] > div {
+        background-color: #1A1A1A !important;
+        border: 1px solid #333333 !important;
+        color: #FFFFFF !important;
+        border-radius: 6px !important;
+    }
+    input {
+        color: #FFFFFF !important;
+        background-color: #1A1A1A !important;
+    }
+    
+    /* Clean Sidebar Collapse Button Override */
     header[data-testid="stHeader"] {
         background-color: transparent !important;
         z-index: 100000 !important;
     }
-    button[data-testid="stSidebarCollapseButton"],
-    button[data-testid="baseButton-headerNoPadding"],
-    [data-testid="collapsedControl"] {
+    button[data-testid="stSidebarCollapseButton"] {
         color: #FFFFFF !important;
         background-color: #222222 !important;
         border: 1px solid #444444 !important;
         border-radius: 6px !important;
-        visibility: visible !important;
-        display: flex !important;
-    }
-    button[data-testid="stSidebarCollapseButton"] svg, 
-    button[data-testid="baseButton-headerNoPadding"] svg,
-    [data-testid="collapsedControl"] svg {
-        fill: #FFFFFF !important;
-        stroke: #FFFFFF !important;
     }
 
     /* Centered Header & Branding Elements */
@@ -119,10 +121,23 @@ if "efficiency_val" not in st.session_state:
 def update_efficiency():
     st.session_state.efficiency_val = st.session_state.efficiency_slider
 
-# Render Context-Aware Sidebar Inputs based on active tab selection
-st.sidebar.markdown("### 🔴 Active Tab Inputs")
+# Active Context Switcher
+st.sidebar.markdown("### 🔴 Active Tab Controls")
+active_section = st.sidebar.selectbox(
+    "Select Active Section Controls",
+    [
+        "Land Data", 
+        "Land Analysis", 
+        "Land Constraints", 
+        "Residential Mix", 
+        "Services Mix", 
+        "New Type Analysis", 
+        "Parking Calculations"
+    ]
+)
+st.sidebar.markdown("---")
 
-# Define default state values for calculations
+# Initialize Default Parameter Variables
 res_pct_nla = 0.50
 serv_pct_nla = 0.15
 landscape_pct_nla = 0.35
@@ -143,78 +158,102 @@ one_br_pct = 0.40
 two_br_pct = 0.20
 three_br_pct = 0.10
 land_type = "Mixed Use"
+surface_parking = 5000
 
-# Render inputs specifically required for each active context
-st.sidebar.subheader("1. Land Data Controls")
-input_type = st.sidebar.radio("Primary Area Input", ["GLA", "NLA"], key="area_mode_radio", index=0 if st.session_state.area_mode == "GLA" else 1, horizontal=True)
-unit_type = st.sidebar.radio("Unit Type", ["Feddans", "SQM"], key="unit_mode_radio", index=0 if st.session_state.unit_mode == "Feddans" else 1, horizontal=True)
+# ---------------------------------------------------------
+# Context-Aware Sidebar Input Rendering
+# ---------------------------------------------------------
+if active_section == "Land Data":
+    st.sidebar.subheader("1. Land Data Controls")
+    input_type = st.sidebar.radio("Primary Area Input", ["GLA", "NLA"], key="area_mode_radio", index=0 if st.session_state.area_mode == "GLA" else 1, horizontal=True)
+    unit_type = st.sidebar.radio("Unit Type", ["Feddans", "SQM"], key="unit_mode_radio", index=0 if st.session_state.unit_mode == "Feddans" else 1, horizontal=True)
 
-efficiency = st.sidebar.slider(
-    "Efficiency Ratio", 
-    min_value=0.1, 
-    max_value=1.0, 
-    value=st.session_state.efficiency_val, 
-    step=0.01,
-    key="efficiency_slider",
-    on_change=update_efficiency
-)
+    efficiency = st.sidebar.slider(
+        "Efficiency Ratio", 
+        min_value=0.1, 
+        max_value=1.0, 
+        value=st.session_state.efficiency_val, 
+        step=0.01,
+        key="efficiency_slider",
+        on_change=update_efficiency
+    )
 
-if input_type == "GLA":
-    if unit_type == "Feddans":
-        current_gla_feddans = st.session_state.gla_sqm_val / SQM_PER_FEDDAN
-        gla_feddans = st.sidebar.number_input("GLA in feddans", value=float(current_gla_feddans), step=1.0, format="%.5f")
-        gla_sqm = gla_feddans * SQM_PER_FEDDAN
+    if input_type == "GLA":
+        if unit_type == "Feddans":
+            current_gla_feddans = st.session_state.gla_sqm_val / SQM_PER_FEDDAN
+            gla_feddans = st.sidebar.number_input("GLA in feddans", value=float(current_gla_feddans), step=1.0, format="%.2f")
+            gla_sqm = gla_feddans * SQM_PER_FEDDAN
+        else:
+            gla_sqm = st.sidebar.number_input("GLA in SQM", value=float(st.session_state.gla_sqm_val), step=1000.0, format="%.2f")
+            gla_feddans = gla_sqm / SQM_PER_FEDDAN
+        
+        st.session_state.gla_sqm_val = gla_sqm
+        nla_sqm = gla_sqm * efficiency
+        nla_feddans = gla_feddans * efficiency
     else:
-        gla_sqm = st.sidebar.number_input("GLA in SQM", value=float(st.session_state.gla_sqm_val), step=1000.0, format="%.2f")
-        gla_feddans = gla_sqm / SQM_PER_FEDDAN
-    
-    st.session_state.gla_sqm_val = gla_sqm
+        current_nla_sqm = st.session_state.gla_sqm_val * efficiency
+        if unit_type == "Feddans":
+            current_nla_feddans = current_nla_sqm / SQM_PER_FEDDAN
+            nla_feddans = st.sidebar.number_input("NLA in feddans", value=float(current_nla_feddans), step=1.0, format="%.2f")
+            nla_sqm = nla_feddans * SQM_PER_FEDDAN
+        else:
+            nla_sqm = st.sidebar.number_input("NLA in SQM", value=float(current_nla_sqm), step=1000.0, format="%.2f")
+            nla_feddans = nla_sqm / SQM_PER_FEDDAN
+        
+        gla_sqm = nla_sqm / efficiency if efficiency > 0 else 0
+        gla_feddans = nla_feddans / efficiency if efficiency > 0 else 0
+        st.session_state.gla_sqm_val = gla_sqm
+
+    st.session_state.area_mode = input_type
+    st.session_state.unit_mode = unit_type
+    land_type = st.sidebar.selectbox("Land Type", ["Mixed Use", "Residential", "Commercial"])
+
+else:
+    # Retain calculated values when off the Land Data sidebar tab
+    efficiency = st.session_state.efficiency_val
+    gla_sqm = st.session_state.gla_sqm_val
+    gla_feddans = gla_sqm / SQM_PER_FEDDAN
     nla_sqm = gla_sqm * efficiency
     nla_feddans = gla_feddans * efficiency
-else:
-    current_nla_sqm = st.session_state.gla_sqm_val * efficiency
-    if unit_type == "Feddans":
-        current_nla_feddans = current_nla_sqm / SQM_PER_FEDDAN
-        nla_feddans = st.sidebar.number_input("NLA in feddans", value=float(current_nla_feddans), step=1.0, format="%.5f")
-        nla_sqm = nla_feddans * SQM_PER_FEDDAN
-    else:
-        nla_sqm = st.sidebar.number_input("NLA in SQM", value=float(current_nla_sqm), step=1000.0, format="%.2f")
-        nla_feddans = nla_sqm / SQM_PER_FEDDAN
-    
-    gla_sqm = nla_sqm / efficiency if efficiency > 0 else 0
-    gla_feddans = nla_feddans / efficiency if efficiency > 0 else 0
-    st.session_state.gla_sqm_val = gla_sqm
 
-st.session_state.area_mode = input_type
-st.session_state.unit_mode = unit_type
-land_type = st.sidebar.selectbox("Land Type", ["Mixed Use", "Residential", "Commercial"])
+if active_section == "Land Analysis":
+    st.sidebar.subheader("2. Land Analysis Controls")
+    res_pct_nla = st.sidebar.slider("Residential % from NLA", 0.0, 1.0, 0.50, 0.01)
+    serv_pct_nla = st.sidebar.slider("Services % from NLA", 0.0, 1.0, 0.15, 0.01)
+    landscape_pct_nla = max(0.0, 1.0 - res_pct_nla - serv_pct_nla)
 
-st.sidebar.markdown("---")
-st.sidebar.subheader("2. Detailed Tab Controls")
-res_pct_nla = st.sidebar.slider("Residential % from NLA", 0.0, 1.0, 0.50, 0.01)
-serv_pct_nla = st.sidebar.slider("Services % from NLA", 0.0, 1.0, 0.15, 0.01)
-landscape_pct_nla = max(0.0, 1.0 - res_pct_nla - serv_pct_nla)
+    res_plot_pct = st.sidebar.slider("Residential Plot % from Land", 0.0, 1.0, 0.50, 0.01)
+    serv_plot_pct = st.sidebar.slider("Services Plot % from Land", 0.0, 1.0, 0.30, 0.01)
 
-res_plot_pct = st.sidebar.slider("Residential Plot % from Land", 0.0, 1.0, 0.50, 0.01)
-serv_plot_pct = st.sidebar.slider("Services Plot % from Land", 0.0, 1.0, 0.30, 0.01)
+elif active_section == "Land Constraints":
+    st.sidebar.subheader("3. Land Constraints Controls")
+    res_floors = st.sidebar.number_input("Residential Floors", value=5, step=1)
+    serv_floors = st.sidebar.number_input("Services Floors", value=4, step=1)
+    allowed_fp_pct = st.sidebar.number_input("Allowed Footprint %", value=0.25, step=0.01, format="%.2f")
+    allowed_far = st.sidebar.number_input("Allowed FAR", value=1.25, step=0.05, format="%.2f")
+    design_contingency = st.sidebar.number_input("Design Contingency", value=0.0, step=0.01, format="%.2f")
 
-res_floors = st.sidebar.number_input("Residential Floors", value=5, step=1)
-serv_floors = st.sidebar.number_input("Services Floors", value=4, step=1)
-allowed_fp_pct = st.sidebar.number_input("Allowed Footprint %", value=0.25, step=0.01)
-allowed_far = st.sidebar.number_input("Allowed FAR", value=1.25, step=0.05)
-design_contingency = st.sidebar.number_input("Design Contingency", value=0.0, step=0.01)
+elif active_section == "Residential Mix":
+    st.sidebar.subheader("4. Residential Mix Controls")
+    apt_mix = st.sidebar.slider("Apartments Mix %", 0.0, 1.0, 0.60, 0.05)
+    villa_mix = st.sidebar.slider("Villas Mix %", 0.0, 1.0, 0.10, 0.05)
+    th_mix = st.sidebar.slider("Townhouses Mix %", 0.0, 1.0, 0.30, 0.05)
 
-apt_mix = st.sidebar.slider("Apartments Mix %", 0.0, 1.0, 0.60, 0.05)
-villa_mix = st.sidebar.slider("Villas Mix %", 0.0, 1.0, 0.10, 0.05)
-th_mix = st.sidebar.slider("Townhouses Mix %", 0.0, 1.0, 0.30, 0.05)
+elif active_section == "Services Mix":
+    st.sidebar.subheader("5. Services Mix Controls")
+    admin_mix = st.sidebar.slider("Admin Mix %", 0.0, 1.0, 0.50, 0.05)
+    comm_mix = 1.0 - admin_mix
 
-admin_mix = st.sidebar.slider("Admin Mix %", 0.0, 1.0, 0.50, 0.05)
-comm_mix = 1.0 - admin_mix
+elif active_section == "New Type Analysis":
+    st.sidebar.subheader("6. New Type Mix Controls")
+    studio_pct = st.sidebar.slider("Studio Mix %", 0.0, 1.0, 0.30, 0.05)
+    one_br_pct = st.sidebar.slider("1BR Mix %", 0.0, 1.0, 0.40, 0.05)
+    two_br_pct = st.sidebar.slider("2BR Mix %", 0.0, 1.0, 0.20, 0.05)
+    three_br_pct = max(0.0, 1.0 - studio_pct - one_br_pct - two_br_pct)
 
-studio_pct = st.sidebar.slider("Studio Mix %", 0.0, 1.0, 0.30, 0.05)
-one_br_pct = st.sidebar.slider("1BR Mix %", 0.0, 1.0, 0.40, 0.05)
-two_br_pct = st.sidebar.slider("2BR Mix %", 0.0, 1.0, 0.20, 0.05)
-three_br_pct = max(0.0, 1.0 - studio_pct - one_br_pct - two_br_pct)
+elif active_section == "Parking Calculations":
+    st.sidebar.subheader("7. Parking Controls")
+    surface_parking = st.sidebar.number_input("Surface Level Parking Slots", value=5000, step=500)
 
 # ---------------------------------------------------------
 # Core Real-Time Calculation Engine
