@@ -90,11 +90,21 @@ if "gla_sqm_val" not in st.session_state:
 if "efficiency_val" not in st.session_state:
     st.session_state.efficiency_val = 0.9
 
+def update_efficiency():
+    st.session_state.efficiency_val = st.session_state.efficiency_slider
+
 input_type = st.sidebar.radio("Primary Area Input", ["GLA", "NLA"], key="area_mode_radio", index=0 if st.session_state.area_mode == "GLA" else 1, horizontal=True)
 unit_type = st.sidebar.radio("Unit Type", ["Feddans", "SQM"], key="unit_mode_radio", index=0 if st.session_state.unit_mode == "Feddans" else 1, horizontal=True)
 
-efficiency = st.sidebar.slider("Efficiency Ratio", min_value=0.1, max_value=1.0, value=st.session_state.efficiency_val, step=0.01)
-st.session_state.efficiency_val = efficiency
+efficiency = st.sidebar.slider(
+    "Efficiency Ratio", 
+    min_value=0.1, 
+    max_value=1.0, 
+    value=st.session_state.efficiency_val, 
+    step=0.01,
+    key="efficiency_slider",
+    on_change=update_efficiency
+)
 
 # Handle persistent values during mode toggles
 if input_type == "GLA":
