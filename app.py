@@ -260,7 +260,48 @@ elif active_tab in ["Prototypes Analysis", "Summary Results"]:
 # ---------------------------------------------------------
 # Core Real-Time Calculation Engine
 # ---------------------------------------------------------
-<!-- ... existing code -->
+total_res_land = nla_sqm * res_pct_nla
+total_serv_land = nla_sqm * serv_pct_nla
+total_landscape_land = nla_sqm * landscape_pct_nla
+
+total_res_plots = total_res_land * res_plot_pct
+total_serv_plots = total_serv_land * serv_plot_pct
+
+allowed_footprint = gla_sqm * allowed_fp_pct
+allowed_bua = gla_sqm * allowed_far
+
+local_services_land = total_res_plots * 0.02
+res_plots_net = total_res_plots - local_services_land
+
+apt_plots = res_plots_net * apt_mix
+villa_plots = res_plots_net * villa_mix
+th_plots = res_plots_net * th_mix
+
+apt_fp = apt_plots * 0.50
+villa_fp = villa_plots * 0.40
+th_fp = th_plots * 0.40
+
+apt_bua = apt_fp * res_floors
+villa_bua = villa_fp * 2.25
+th_bua = th_fp * 2.50
+
+admin_plots = total_serv_plots * admin_mix
+comm_plots = total_serv_plots * comm_mix
+
+admin_fp = admin_plots * 0.30
+comm_fp = comm_plots * 0.30
+
+admin_bua = admin_fp * serv_floors
+comm_bua = comm_fp * serv_floors
+
+total_achieved_fp = apt_fp + villa_fp + th_fp + local_services_land + admin_fp + comm_fp
+total_achieved_bua = apt_bua + villa_bua + th_bua + local_services_land + admin_bua + comm_bua
+
+rem_fp = allowed_footprint - total_achieved_fp
+rem_bua = allowed_bua - total_achieved_bua
+achieved_bua_pct = (total_achieved_bua / allowed_bua) if allowed_bua > 0 else 0
+achieved_far = (total_achieved_bua / gla_sqm) if gla_sqm > 0 else 0
+
 # ---------------------------------------------------------
 # Populate Content inside Main Tabs
 # ---------------------------------------------------------
