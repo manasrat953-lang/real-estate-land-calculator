@@ -2,172 +2,341 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-# Page Configuration & Branding
+# ---------------------------------------------------------
+# Page Configuration & Dark Executive Theme
+# ---------------------------------------------------------
 st.set_page_config(
-    page_title="Real Estate Land Study & Masterplan Calculator",
-    page_icon="🏢",
+    page_title="Madinet Masr - Land Feasibility Calculator",
+    page_icon="🏗️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom Styling & Executive UI Theme
 st.markdown("""
 <style>
-    .main-header {
-        font-size: 2.2rem;
-        font-weight: 700;
-        color: #1E3A8A;
-        margin-bottom: 0.1rem;
+    /* Dark Theme Core Styles */
+    .stApp {
+        background-color: #0F172A;
+        color: #F8FAFC;
     }
-    .sub-header {
-        font-size: 1.05rem;
-        color: #64748B;
+    .stSidebar {
+        background-color: #1E293B;
+        border-right: 1px solid #334155;
+    }
+    .brand-header {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: #E2E8F0;
+        margin-bottom: 0px;
+        letter-spacing: -0.5px;
+    }
+    .brand-sub {
+        font-size: 0.95rem;
+        color: #94A3B8;
+        font-weight: 500;
         margin-bottom: 1.5rem;
     }
+    .powered-by {
+        font-size: 0.85rem;
+        color: #94A3B8;
+        text-align: right;
+        font-style: italic;
+        padding-top: 10px;
+    }
     .stMetric {
-        background-color: #F8FAFC;
-        border: 1px solid #E2E8F0;
-        padding: 12px;
-        border-radius: 8px;
+        background-color: #1E293B !important;
+        border: 1px solid #334155 !important;
+        padding: 12px !important;
+        border-radius: 8px !important;
+    }
+    div[data-testid="stMetricValue"] {
+        color: #38BDF8 !important;
+        font-size: 1.6rem !important;
+    }
+    /* Dark Theme Table Customization */
+    .dataframe {
+        color: #F8FAFC !important;
+        background-color: #1E293B !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Header Section
-st.markdown('<div class="main-header">🏢 Real Estate Land Study & Masterplan Calculator</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Executive Feasibility, Zoning, & Masterplan Analytics Engine</div>', unsafe_allow_html=True)
+# ---------------------------------------------------------
+# Header & Branding Section
+# ---------------------------------------------------------
+col_title, col_logo = st.columns([3, 1])
+with col_title:
+    st.markdown('<div class="brand-header">MADINET MASR</div>', unsafe_allow_html=True)
+    st.markdown('<div class="brand-sub">Real Estate Land Feasibility & Masterplan Analytics Engine</div>', unsafe_allow_html=True)
+with col_logo:
+    st.markdown('<div class="powered-by">Powered by <b>Madinet Masr</b></div>', unsafe_allow_html=True)
 
-# Sidebar Inputs (Master Drivers from Excel)
-st.sidebar.header("📍 Land & Site Parameters")
-gla_feddans = st.sidebar.number_input("Gross Land Area (GLA in Feddans)", value=214.19, step=1.0, format="%.2f")
-efficiency = st.sidebar.slider("Land Efficiency Ratio", min_value=0.5, max_value=1.0, value=0.9, step=0.01)
+st.markdown("---")
+
+# ---------------------------------------------------------
+# Sidebar Inputs (RED CELLS ONLY from Excel)
+# ---------------------------------------------------------
+st.sidebar.markdown("### 🔴 Input Parameters (Red Cells)")
+
+# Land Data Inputs
+st.sidebar.subheader("1. Land Data")
+gla_feddans = st.sidebar.number_input("GLA in feddans", value=214.19347, step=1.0, format="%.5f")
+efficiency = st.sidebar.slider("Efficiency Ratio", min_value=0.1, max_value=1.0, value=0.9, step=0.01)
 land_type = st.sidebar.selectbox("Land Type", ["Mixed Use", "Residential", "Commercial"])
 
-st.sidebar.markdown("---")
-st.sidebar.subheader("📐 Net Land Area (NLA) Allocation")
-res_pct_nla = st.sidebar.slider("Residential % from NLA", 0.0, 1.0, 0.5, 0.05)
-serv_pct_nla = st.sidebar.slider("Services % from NLA", 0.0, 1.0, 0.15, 0.05)
-landscape_pct_nla = max(0.0, 1.0 - res_pct_nla - serv_pct_nla)
-st.sidebar.text(f"Landscape & Roads % (Auto): {landscape_pct_nla:.2f}")
+# Land Analysis Inputs
+st.sidebar.subheader("2. Land Analysis Breakdown")
+res_pct_nla = st.sidebar.slider("Residential % from NLA", 0.0, 1.0, 0.50, 0.01)
+serv_pct_nla = st.sidebar.slider("Services % from NLA", 0.0, 1.0, 0.15, 0.01)
+landscape_pct_nla = 1.0 - res_pct_nla - serv_pct_nla
 
-st.sidebar.markdown("---")
-st.sidebar.subheader("🏛️ Zoning & BUA Constraints")
+res_plot_pct = st.sidebar.slider("Residential Plot % from Total Land", 0.0, 1.0, 0.50, 0.01)
+serv_plot_pct = st.sidebar.slider("Services Plot % from Total Land", 0.0, 1.0, 0.30, 0.01)
+
+# Constraints Inputs
+st.sidebar.subheader("3. Land Constraints")
+res_floors = st.sidebar.number_input("Residential Floors", value=5, step=1)
+serv_floors = st.sidebar.number_input("Services Floors", value=4, step=1)
+allowed_fp_pct = st.sidebar.number_input("Allowed Footprint %", value=0.25, step=0.01)
 allowed_far = st.sidebar.number_input("Allowed FAR", value=1.25, step=0.05)
-allowed_footprint_pct = st.sidebar.number_input("Total Allowed Footprint %", value=0.25, step=0.01)
-res_floors = st.sidebar.number_input("Residential Number of Floors", value=5, step=1)
-serv_floors = st.sidebar.number_input("Services Number of Floors", value=4, step=1)
+design_contingency = st.sidebar.number_input("Design Contingency", value=0.0, step=0.01)
 
-st.sidebar.markdown("---")
-st.sidebar.subheader("🛋️ New Type Apartment Product Mix")
-studio_mix = st.sidebar.slider("Studio Mix %", 0.0, 1.0, 0.3, 0.05)
-one_br_mix = st.sidebar.slider("1BR Mix %", 0.0, 1.0, 0.4, 0.05)
-two_br_mix = st.sidebar.slider("2BR Mix %", 0.0, 1.0, 0.2, 0.05)
-three_br_mix = max(0.0, 1.0 - studio_mix - one_br_mix - two_br_mix)
-st.sidebar.text(f"3BR Mix % (Auto): {three_br_mix:.2f}")
+# Mix Inputs
+st.sidebar.subheader("4. Residential Plot Mix")
+apt_mix = st.sidebar.slider("Apartments Mix %", 0.0, 1.0, 0.60, 0.05)
+villa_mix = st.sidebar.slider("Villas Mix %", 0.0, 1.0, 0.10, 0.05)
+th_mix = st.sidebar.slider("Townhouses Mix %", 0.0, 1.0, 0.30, 0.05)
 
-# Core Calculation Engine (Replicating Excel logic)
+st.sidebar.subheader("5. Services Plot Mix")
+admin_mix = st.sidebar.slider("Admin Mix %", 0.0, 1.0, 0.50, 0.05)
+comm_mix = 1.0 - admin_mix
+
+st.sidebar.subheader("6. New Type Product Mix")
+studio_pct = st.sidebar.slider("Studio Mix %", 0.0, 1.0, 0.30, 0.05)
+one_br_pct = st.sidebar.slider("1BR Mix %", 0.0, 1.0, 0.40, 0.05)
+two_br_pct = st.sidebar.slider("2BR Mix %", 0.0, 1.0, 0.20, 0.05)
+three_br_pct = max(0.0, 1.0 - studio_pct - one_br_pct - two_br_pct)
+
+# ---------------------------------------------------------
+# Core Real-Time Calculation Engine
+# ---------------------------------------------------------
 SQM_PER_FEDDAN = 4200.0
 gla_sqm = gla_feddans * SQM_PER_FEDDAN
 nla_feddans = gla_feddans * efficiency
 nla_sqm = gla_sqm * efficiency
 
-res_land = nla_sqm * res_pct_nla
-serv_land = nla_sqm * serv_pct_nla
-landscape_land = nla_sqm * landscape_pct_nla
+# Land Analysis
+total_res_land = nla_sqm * res_pct_nla
+total_res_plots = total_res_land * res_plot_pct
+total_serv_land = nla_sqm * serv_pct_nla
+total_serv_plots = total_serv_land * serv_plot_pct
+total_landscape_land = nla_sqm * landscape_pct_nla
 
+# Constraints
+allowed_footprint = gla_sqm * allowed_fp_pct
 allowed_bua = gla_sqm * allowed_far
-allowed_footprint = gla_sqm * allowed_footprint_pct
 
-# Tabs Organization
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-    "📊 Land & NLA", 
-    "🏛️ Constraints & BUA", 
-    "🏘️ Land Mix", 
-    "🏢 Prototypes & Units", 
-    "🅿️ Parking & Basement", 
-    "📋 Executive Summary"
+# Contingency
+res_plots_after_cont = total_res_plots * (1.0 - design_contingency)
+serv_plots_after_cont = total_serv_plots * (1.0 - design_contingency)
+
+# Residential Mix Calculations
+apt_plots = res_plots_after_cont * apt_mix
+villa_plots = res_plots_after_cont * villa_mix
+th_plots = res_plots_after_cont * th_mix
+
+apt_fp = apt_plots * 0.5
+villa_fp = villa_plots * 0.4
+th_fp = th_plots * 0.4
+
+apt_bua = apt_fp * res_floors
+villa_bua = villa_fp * 2.25
+th_bua = th_fp * 2.5
+
+res_subtotal_bua = apt_bua + villa_bua + th_bua
+local_services_land = total_res_land * 0.02
+total_res_achieved_bua = res_subtotal_bua + local_services_land
+
+# Services Mix Calculations
+admin_plots = serv_plots_after_cont * admin_mix
+comm_plots = serv_plots_after_cont * comm_mix
+
+admin_fp = admin_plots * 0.3
+comm_fp = comm_plots * 0.3
+
+admin_bua = admin_fp * serv_floors
+comm_bua = comm_fp * serv_floors
+
+total_serv_achieved_bua = admin_bua + comm_bua
+total_serv_achieved_fp = admin_fp + comm_fp
+
+# Overall Summaries & Checkers
+total_achieved_bua = total_res_achieved_bua + total_serv_achieved_bua
+total_achieved_fp = (apt_fp + villa_fp + th_fp + local_services_land) + total_serv_achieved_fp
+
+rem_bua = allowed_bua - total_achieved_bua
+rem_fp = allowed_footprint - total_achieved_fp
+achieved_bua_pct = total_achieved_bua / allowed_bua if allowed_bua > 0 else 0
+achieved_fp_pct = total_achieved_fp / allowed_footprint if allowed_footprint > 0 else 0
+achieved_far = total_achieved_bua / gla_sqm if gla_sqm > 0 else 0
+
+# ---------------------------------------------------------
+# Real-Time Validation & Checker Alerts
+# ---------------------------------------------------------
+nla_sum = res_pct_nla + serv_pct_nla + landscape_pct_nla
+res_mix_sum = apt_mix + villa_mix + th_mix
+new_type_sum = studio_pct + one_br_pct + two_br_pct + three_br_pct
+
+if abs(nla_sum - 1.0) > 0.001:
+    st.error(f"⚠️ **NLA Allocation Error:** The sum of Residential, Services, and Landscape percentages is **{nla_sum*100:.1f}%**. It must equal 100%.")
+
+if abs(res_mix_sum - 1.0) > 0.001:
+    st.warning(f"⚠️ **Residential Mix Constraint:** Current residential plot mix sum is **{res_mix_sum*100:.1f}%**. Adjust sliders to total 100%.")
+
+if abs(new_type_sum - 1.0) > 0.001:
+    st.warning(f"⚠️ **New Type Mix Constraint:** Apartment mix sum is **{new_type_sum*100:.1f}%**. Adjust to hit 100%.")
+
+if total_achieved_bua > allowed_bua:
+    st.error(f"🚨 **Zoning Constraint Violation:** Achieved BUA ({total_achieved_bua:,.0f} SQM) exceeds Allowed BUA ({allowed_bua:,.0f} SQM)!")
+
+# ---------------------------------------------------------
+# Dynamic Excel-Aligned Navigation Tabs
+# ---------------------------------------------------------
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
+    "Land Data", 
+    "Land Analysis", 
+    "Land Constraints", 
+    "Residential Mix", 
+    "Services Mix", 
+    "Prototypes Analysis", 
+    "New Type Analysis", 
+    "Parking Calculations", 
+    "Summary Results"
 ])
 
 with tab1:
-    st.subheader("Gross & Net Land Area Analysis")
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("GLA (SQM)", f"{gla_sqm:,.2f}")
-    col2.metric("GLA (Feddans)", f"{gla_feddans:,.2f}")
-    col3.metric("NLA (SQM)", f"{nla_sqm:,.2f}")
-    col4.metric("Efficiency", f"{efficiency*100:.0f}%")
+    st.subheader("Land Data")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("GLA (Feddans)", f"{gla_feddans:,.2f}")
+    c2.metric("GLA (SQM)", f"{gla_sqm:,.2f}")
+    c3.metric("Efficiency Ratio", f"{efficiency*100:.1f}%")
     
-    st.markdown("### Net Land Area Breakdown")
-    nla_df = pd.DataFrame({
-        "Component": ["Residential", "Services", "Landscape & Roads"],
-        "Percentage from NLA": [res_pct_nla, serv_pct_nla, landscape_pct_nla],
-        "Area (SQM)": [res_land, serv_land, landscape_land],
-        "Area (Feddans)": [res_land/SQM_PER_FEDDAN, serv_land/SQM_PER_FEDDAN, landscape_land/SQM_PER_FEDDAN]
-    })
-    st.dataframe(nla_df.style.format({"Percentage from NLA": "{:.1%}", "Area (SQM)": "{:,.2f}", "Area (Feddans)": "{:,.2f}"}), use_container_width=True)
+    st.markdown("---")
+    c4, c5, c6 = st.columns(3)
+    c4.metric("NLA (Feddans)", f"{nla_feddans:,.2f}")
+    c5.metric("NLA (SQM)", f"{nla_sqm:,.2f}")
+    c6.metric("Land Type", land_type)
 
 with tab2:
-    st.subheader("Zoning Limits & BUA Capacities")
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Allowed BUA (SQM)", f"{allowed_bua:,.2f}")
-    col2.metric("Allowed Footprint (SQM)", f"{allowed_footprint:,.2f}")
-    col3.metric("Allowed FAR", f"{allowed_far:.2f}")
-    
-    st.info(f"**Building Heights:** Residential: G+{res_floors-1} ({res_floors} Floors) | Services: G+{serv_floors-1} ({serv_floors} Floors)")
+    st.subheader("Land Analysis")
+    df_la = pd.DataFrame({
+        "Component": ["Residential Land", "Services Land", "Landscape & Roads"],
+        "% from NLA": [res_pct_nla, serv_pct_nla, landscape_pct_nla],
+        "Total Land (SQM)": [total_res_land, total_serv_land, total_landscape_land],
+        "% Plots from Land": [res_plot_pct, serv_plot_pct, 0.0],
+        "Total Plots (SQM)": [total_res_plots, total_serv_plots, 0.0]
+    })
+    st.dataframe(df_la.style.format({
+        "% from NLA": "{:.1%}",
+        "Total Land (SQM)": "{:,.2f}",
+        "% Plots from Land": "{:.1%}",
+        "Total Plots (SQM)": "{:,.2f}"
+    }), use_container_width=True)
 
 with tab3:
-    st.subheader("Residential & Services Land Mix")
-    col_a, col_b = st.columns(2)
-    with col_a:
-        st.markdown("#### Residential Land Mix")
-        res_mix_df = pd.DataFrame({
-            "Building Type": ["Apartments", "Villas", "Townhouses", "Local Services"],
-            "Plot Mix %": ["60%", "10%", "30%", "2%"],
-            "Floors": [5, 2.25, 2.5, 1],
-            "Coverage %": ["50%", "40%", "40%", "100%"]
-        })
-        st.dataframe(res_mix_df, use_container_width=True)
-    with col_b:
-        st.markdown("#### Services Land Mix")
-        serv_mix_df = pd.DataFrame({
-            "Service Type": ["Admin", "Commercial"],
-            "Plot Mix %": ["50%", "50%"],
-            "Floors": [4, 4],
-            "Coverage %": ["30%", "30%"]
-        })
-        st.dataframe(serv_mix_df, use_container_width=True)
+    st.subheader("Land Constraints")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Allowed Footprint %", f"{allowed_fp_pct*100:.1f}%")
+    c2.metric("Allowed Footprint (SQM)", f"{allowed_footprint:,.2f}")
+    c3.metric("Allowed BUA (SQM)", f"{allowed_bua:,.2f}")
+    c4.metric("Allowed FAR", f"{allowed_far:.2f}")
 
 with tab4:
-    st.subheader("Residential Prototypes & Product Mix")
-    st.markdown("#### New Type Apartment Product Mix Breakdown")
-    prod_mix_df = pd.DataFrame({
-        "Unit Type": ["Studio", "1BR", "2BR", "3BR"],
-        "Mix %": [studio_mix, one_br_mix, two_br_mix, three_br_mix],
-        "Avg Net Area (SQM)": [50, 100, 130, 160],
-        "Estimated Keys / Units": [
-            res_land * 0.5 * 0.6 * 0.7 * studio_mix / 50,
-            res_land * 0.5 * 0.6 * 0.7 * one_br_mix / 100,
-            res_land * 0.5 * 0.6 * 0.7 * two_br_mix / 130,
-            res_land * 0.5 * 0.6 * 0.7 * three_br_mix / 160
-        ]
+    st.subheader("Residential Mix")
+    df_res = pd.DataFrame({
+        "Type": ["Apartments", "Villas", "Townhouses", "Local Services"],
+        "Plot Mix %": [apt_mix, villa_mix, th_mix, 0.02],
+        "Mix Plots (SQM)": [apt_plots, villa_plots, th_plots, local_services_land],
+        "Coverage": [0.5, 0.4, 0.4, 1.0],
+        "Actual Footprint (SQM)": [apt_fp, villa_fp, th_fp, local_services_land],
+        "Floors": [res_floors, 2.25, 2.5, 1],
+        "Mix BUA (SQM)": [apt_bua, villa_bua, th_bua, local_services_land]
     })
-    st.dataframe(prod_mix_df.style.format({"Mix %": "{:.1%}", "Avg Net Area (SQM)": "{:,.0f}", "Estimated Keys / Units": "{:,.1f}"}), use_container_width=True)
+    st.dataframe(df_res.style.format({
+        "Plot Mix %": "{:.1%}",
+        "Mix Plots (SQM)": "{:,.2f}",
+        "Coverage": "{:.1%}",
+        "Actual Footprint (SQM)": "{:,.2f}",
+        "Mix BUA (SQM)": "{:,.2f}"
+    }), use_container_width=True)
 
 with tab5:
-    st.subheader("Parking & Basement Area Calculations")
-    col1, col2 = st.columns(2)
-    surface_parking = col1.number_input("Surface Level Parking (SQM)", value=5000.0, step=500.0)
-    parking_ratio_pct = col2.slider("Required Basement Area Ratio (%)", 1.0, 5.0, 2.83, 0.01)
-    
-    req_basement = nla_sqm * (parking_ratio_pct / 100.0) * 800.0
-    col1.metric("Surface Parking", f"{surface_parking:,.2f} SQM")
-    col2.metric("Required Basement Scale", f"{req_basement:,.2f} SQM")
+    st.subheader("Services Mix")
+    df_serv = pd.DataFrame({
+        "Type": ["Admin", "Commercial"],
+        "Plot Mix %": [admin_mix, comm_mix],
+        "Mix Plots (SQM)": [admin_plots, comm_plots],
+        "Coverage": [0.3, 0.3],
+        "Actual Footprint (SQM)": [admin_fp, comm_fp],
+        "Floors": [serv_floors, serv_floors],
+        "Mix BUA (SQM)": [admin_bua, comm_bua]
+    })
+    st.dataframe(df_serv.style.format({
+        "Plot Mix %": "{:.1%}",
+        "Mix Plots (SQM)": "{:,.2f}",
+        "Coverage": "{:.1%}",
+        "Actual Footprint (SQM)": "{:,.2f}",
+        "Mix BUA (SQM)": "{:,.2f}"
+    }), use_container_width=True)
 
 with tab6:
-    st.subheader("Executive Masterplan KPI Summary")
-    st.success("All masterplan calculations, zoning envelopes, and area checks have been successfully compiled.")
-    
-    summary_df = pd.DataFrame({
-        "Metric": ["Gross Land Area (GLA)", "Net Land Area (NLA)", "Allowed BUA", "Allowed Footprint", "Overall FAR"],
-        "Value": [f"{gla_sqm:,.2f} SQM", f"{nla_sqm:,.2f} SQM", f"{allowed_bua:,.2f} SQM", f"{allowed_footprint:,.2f} SQM", f"{allowed_far:.2f}"]
+    st.subheader("Residential Prototypes Analysis")
+    df_proto = pd.DataFrame({
+        "Building Prototype": ["Type Solo Homes", "Type T", "New Type"],
+        "Prototype %": [0.0, 0.30, 0.70],
+        "Footprint (SQM)": [486, 1059, 1200],
+        "Floors": [5, 5, 5],
+        "BUA per Unit": [2430, 5295, 6000]
     })
-    st.dataframe(summary_df, use_container_width=True)
+    st.dataframe(df_proto, use_container_width=True)
+
+with tab7:
+    st.subheader("New Type Analysis")
+    net_bua = apt_bua * 0.70
+    df_nt = pd.DataFrame({
+        "Product Mix": ["Studio", "1BR", "2BR", "3BR", "4BR"],
+        "Mix %": [studio_pct, one_br_pct, two_br_pct, three_br_pct, 0.0],
+        "Avg Net Area (SQM)": [50, 100, 130, 160, 200],
+        "Estimated Keys": [
+            (net_bua * studio_pct) / 50 if studio_pct > 0 else 0,
+            (net_bua * one_br_pct) / 100 if one_br_pct > 0 else 0,
+            (net_bua * two_br_pct) / 130 if two_br_pct > 0 else 0,
+            (net_bua * three_br_pct) / 160 if three_br_pct > 0 else 0,
+            0
+        ]
+    })
+    st.dataframe(df_nt.style.format({"Mix %": "{:.1%}", "Estimated Keys": "{:,.1f}"}), use_container_width=True)
+
+with tab8:
+    st.subheader("Residential Parking Calculations")
+    col1, col2 = st.columns(2)
+    surface_parking = col1.number_input("Surface Level Parking Slots", value=5000, step=500)
+    req_basement_pct = (nla_sqm * 0.0272) / nla_sqm if nla_sqm > 0 else 0
+    col2.metric("Required Basement Ratio %", f"{req_basement_pct*100:.2f}%")
+    st.info(f"Surface Parking Capacity: {surface_parking:,} slots | Estimated Basement Requirement: {nla_sqm * 2.72:,.2f} SQM")
+
+with tab9:
+    st.subheader("🔴 Calculation Results (Dark Red Summary)")
+    
+    res_col1, res_col2 = st.columns(2)
+    with res_col1:
+        st.markdown("### BUA Performance")
+        st.metric("Total Achieved BUA", f"{total_achieved_bua:,.2f} SQM")
+        st.metric("Total Remaining BUA", f"{rem_bua:,.2f} SQM")
+        st.metric("Achieved % from Allowed BUA", f"{achieved_bua_pct*100:.2f}%")
+
+    with res_col2:
+        st.markdown("### Footprint & FAR Performance")
+        st.metric("Total Achieved Footprint", f"{total_achieved_fp:,.2f} SQM")
+        st.metric("Total Remaining Footprint", f"{rem_fp:,.2f} SQM")
+        st.metric("Achieved FAR", f"{achieved_far:.2f}")
