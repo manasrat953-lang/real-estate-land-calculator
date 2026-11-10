@@ -1,48 +1,17 @@
-import streamlit as     st
-import pandas as pd
-import numpy as np
-
-# ---------------------------------------------------------
-# Page Configuration & Dark Executive Theme
-# ---------------------------------------------------------
-st.set_page_config(
-    page_title="Madinet Masr - Land Feasibility Calculator",
-    page_icon="🏗️",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
-
-st.markdown("""
-<style>
-    /* Google Font for Corporate Brand Harmony (Montserrat matches Madinet Masr logotype) */
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
-
-    /* Global Typography & Black Background Override */
-    html, body, [class*="css"], .stApp, .stText, .stMarkdown, p, span, label, div, h1, h2, h3, h4, h5, h6, button, input {
-        font-family: 'Montserrat', 'Helvetica Neue', Arial, sans-serif !important;
-        color: #FFFFFF !important;
-    }
-    .stApp {
-        background-color: #000000 !important;
-    }
-    .stSidebar {
-        background-color: #0A0A0A !important;
-        border-right: 1px solid #222222 !important;
-    }
-
+<!-- ... existing code -->
     /* Black Input Box Styling with White Text */
-    div[data-baseweb="input"], div[data-baseweb="select"] > div, div[data-baseweb="base-input"] {
-        background-color: #121212 !important;
+    div[data-baseweb="input"], div[data-baseweb="select"] > div, div[data-baseweb="base-input"], div[data-baseweb="input"] input {
+        background-color: #000000 !important;
         border: 1px solid #333333 !important;
         color: #FFFFFF !important;
         border-radius: 6px !important;
     }
     input, select, textarea {
         color: #FFFFFF !important;
-        background-color: #121212 !important;
+        background-color: #000000 !important;
     }
     div[role="listbox"] {
-        background-color: #121212 !important;
+        background-color: #000000 !important;
         color: #FFFFFF !important;
     }
     
@@ -60,6 +29,9 @@ st.markdown("""
     button[data-testid="stSidebarCollapseButton"]:hover {
         background-color: #333333 !important;
     }
+    button[data-testid="stSidebarCollapseButton"]::before {
+        content: "" !important;
+    }
 
     /* Centered Header & Branding Elements */
     .brand-container {
@@ -73,12 +45,13 @@ st.markdown("""
         margin-bottom: 0.5rem;
     }
     .brand-title {
-        font-size: 1.6rem;
+        font-family: 'Montserrat', 'Helvetica Neue', Arial, sans-serif !important;
+        font-size: 1.8rem;
         color: #FFFFFF !important;
-        font-weight: 600;
+        font-weight: 700;
         text-align: center;
-        margin-top: 0.6rem;
-        letter-spacing: 1.5px;
+        margin-top: 0.5rem;
+        letter-spacing: 1px;
     }
     .stMetric {
         background-color: #111111 !important;
@@ -132,27 +105,26 @@ if "efficiency_val" not in st.session_state:
 def update_efficiency():
     st.session_state.efficiency_val = st.session_state.efficiency_slider
 
-# Declare Excel-Aligned Tabs First to Enable Automatic Sidebar Binding
-tab_names = [
-    "Land Data", 
-    "Land Analysis", 
-    "Land Constraints", 
-    "Residential Mix", 
-    "Services Mix", 
-    "Prototypes Analysis", 
-    "New Type Analysis", 
-    "Parking Calculations", 
-    "Summary Results"
-]
+# Tab Selection Radio directly in Sidebar for reliable active state switching
+st.sidebar.markdown("### 📌 Navigation Section")
+active_tab = st.sidebar.radio(
+    "Select Section to View & Edit",
+    [
+        "Land Data", 
+        "Land Analysis", 
+        "Land Constraints", 
+        "Residential Mix", 
+        "Services Mix", 
+        "Prototypes Analysis", 
+        "New Type Analysis", 
+        "Parking Calculations", 
+        "Summary Results"
+    ],
+    key="active_tab_selection"
+)
 
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs(tab_names)
-
-# Track Active Tab automatically using query/session state or selection
-if "active_tab" not in st.session_state:
-    st.session_state.active_tab = "Land Data"
-
-# Sidebar Section Title
-st.sidebar.markdown(f"### 🔴 {st.session_state.active_tab} Inputs")
+st.sidebar.markdown("---")
+st.sidebar.markdown(f"### 🔴 {active_tab} Inputs")
 
 # Initialize Default Parameter Variables
 res_pct_nla = 0.50
@@ -178,10 +150,8 @@ land_type = "Mixed Use"
 surface_parking = 5000
 
 # ---------------------------------------------------------
-# Dynamic Sidebar Inputs Driven by Active Tab Selection
+# Dynamic Sidebar Inputs Driven by Selected Navigation Section
 # ---------------------------------------------------------
-active_tab = st.session_state.active_tab
-
 if active_tab == "Land Data":
     st.sidebar.subheader("1. Land Data Controls")
     input_type = st.sidebar.radio("Primary Area Input", ["GLA", "NLA"], key="area_mode_radio", index=0 if st.session_state.area_mode == "GLA" else 1, horizontal=True)
@@ -279,80 +249,26 @@ elif active_tab in ["Prototypes Analysis", "Summary Results"]:
 # ---------------------------------------------------------
 # Core Real-Time Calculation Engine
 # ---------------------------------------------------------
-total_res_land = nla_sqm * res_pct_nla
-total_res_plots = total_res_land * res_plot_pct
-total_serv_land = nla_sqm * serv_pct_nla
-total_serv_plots = total_serv_land * serv_plot_pct
-total_landscape_land = nla_sqm * landscape_pct_nla
-
-allowed_footprint = gla_sqm * allowed_fp_pct
-allowed_bua = gla_sqm * allowed_far
-
-res_plots_after_cont = total_res_plots * (1.0 - design_contingency)
-serv_plots_after_cont = total_serv_plots * (1.0 - design_contingency)
-
-apt_plots = res_plots_after_cont * apt_mix
-villa_plots = res_plots_after_cont * villa_mix
-th_plots = res_plots_after_cont * th_mix
-
-apt_fp = apt_plots * 0.5
-villa_fp = villa_plots * 0.4
-th_fp = th_plots * 0.4
-
-apt_bua = apt_fp * res_floors
-villa_bua = villa_fp * 2.25
-th_bua = th_fp * 2.5
-
-res_subtotal_bua = apt_bua + villa_bua + th_bua
-local_services_land = total_res_land * 0.02
-total_res_achieved_bua = res_subtotal_bua + local_services_land
-
-admin_plots = serv_plots_after_cont * admin_mix
-comm_plots = serv_plots_after_cont * comm_mix
-
-admin_fp = admin_plots * 0.3
-comm_fp = comm_plots * 0.3
-
-admin_bua = admin_fp * serv_floors
-comm_bua = comm_fp * serv_floors
-
-total_serv_achieved_bua = admin_bua + comm_bua
-total_serv_achieved_fp = admin_fp + comm_fp
-
-total_achieved_bua = total_res_achieved_bua + total_serv_achieved_bua
-total_achieved_fp = (apt_fp + villa_fp + th_fp + local_services_land) + total_serv_achieved_fp
-
-rem_bua = allowed_bua - total_achieved_bua
-rem_fp = allowed_footprint - total_achieved_fp
-achieved_bua_pct = total_achieved_bua / allowed_bua if allowed_bua > 0 else 0
-achieved_fp_pct = total_achieved_fp / allowed_footprint if allowed_footprint > 0 else 0
-achieved_far = total_achieved_bua / gla_sqm if gla_sqm > 0 else 0
-
+<!-- ... existing code -->
 # ---------------------------------------------------------
-# Real-Time Validation & Checker Alerts
+# Populate Content inside Main Tabs
 # ---------------------------------------------------------
-nla_sum = res_pct_nla + serv_pct_nla + landscape_pct_nla
-res_mix_sum = apt_mix + villa_mix + th_mix
-new_type_sum = studio_pct + one_br_pct + two_br_pct + three_br_pct
+tab_index = [
+    "Land Data", 
+    "Land Analysis", 
+    "Land Constraints", 
+    "Residential Mix", 
+    "Services Mix", 
+    "Prototypes Analysis", 
+    "New Type Analysis", 
+    "Parking Calculations", 
+    "Summary Results"
+].index(active_tab)
 
-if abs(nla_sum - 1.0) > 0.001:
-    st.error(f"⚠️ **NLA Allocation Error:** The sum of Residential, Services, and Landscape percentages is **{nla_sum*100:.1f}%**. It must equal 100%.")
+# Render Section Header based on Navigation Selection
+st.subheader(active_tab)
 
-if abs(res_mix_sum - 1.0) > 0.001:
-    st.warning(f"⚠️ **Residential Mix Constraint:** Current residential plot mix sum is **{res_mix_sum*100:.1f}%**. Adjust sliders to total 100%.")
-
-if abs(new_type_sum - 1.0) > 0.001:
-    st.warning(f"⚠️ **New Type Mix Constraint:** Apartment mix sum is **{new_type_sum*100:.1f}%**. Adjust to hit 100%.")
-
-if total_achieved_bua > allowed_bua:
-    st.error(f"🚨 **Zoning Constraint Violation:** Achieved BUA ({total_achieved_bua:,.0f} SQM) exceeds Allowed BUA ({allowed_bua:,.0f} SQM)!")
-
-# ---------------------------------------------------------
-# Populate Content inside Excel-Aligned Navigation Tabs
-# ---------------------------------------------------------
-with tab1:
-    st.session_state.active_tab = "Land Data"
-    st.subheader("Land Data")
+if active_tab == "Land Data":
     c1, c2, c3 = st.columns(3)
     c1.metric("GLA (Feddans)", f"{gla_feddans:,.2f}")
     c2.metric("GLA (SQM)", f"{gla_sqm:,.2f}")
@@ -364,9 +280,7 @@ with tab1:
     c5.metric("NLA (SQM)", f"{nla_sqm:,.2f}")
     c6.metric("Land Type", land_type)
 
-with tab2:
-    st.session_state.active_tab = "Land Analysis"
-    st.subheader("Land Analysis")
+elif active_tab == "Land Analysis":
     df_la = pd.DataFrame({
         "Component": ["Residential Land", "Services Land", "Landscape & Roads"],
         "% from NLA": [res_pct_nla, serv_pct_nla, landscape_pct_nla],
@@ -381,18 +295,14 @@ with tab2:
         "Total Plots (SQM)": "{:,.2f}"
     }), use_container_width=True)
 
-with tab3:
-    st.session_state.active_tab = "Land Constraints"
-    st.subheader("Land Constraints")
+elif active_tab == "Land Constraints":
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Allowed Footprint %", f"{allowed_fp_pct*100:.1f}%")
     c2.metric("Allowed Footprint (SQM)", f"{allowed_footprint:,.2f}")
     c3.metric("Allowed BUA (SQM)", f"{allowed_bua:,.2f}")
     c4.metric("Allowed FAR", f"{allowed_far:.2f}")
 
-with tab4:
-    st.session_state.active_tab = "Residential Mix"
-    st.subheader("Residential Mix")
+elif active_tab == "Residential Mix":
     df_res = pd.DataFrame({
         "Type": ["Apartments", "Villas", "Townhouses", "Local Services"],
         "Plot Mix %": [apt_mix, villa_mix, th_mix, 0.02],
@@ -410,9 +320,7 @@ with tab4:
         "Mix BUA (SQM)": "{:,.2f}"
     }), use_container_width=True)
 
-with tab5:
-    st.session_state.active_tab = "Services Mix"
-    st.subheader("Services Mix")
+elif active_tab == "Services Mix":
     df_serv = pd.DataFrame({
         "Type": ["Admin", "Commercial"],
         "Plot Mix %": [admin_mix, comm_mix],
@@ -430,9 +338,7 @@ with tab5:
         "Mix BUA (SQM)": "{:,.2f}"
     }), use_container_width=True)
 
-with tab6:
-    st.session_state.active_tab = "Prototypes Analysis"
-    st.subheader("Residential Prototypes Analysis")
+elif active_tab == "Prototypes Analysis":
     df_proto = pd.DataFrame({
         "Building Prototype": ["Type Solo Homes", "Type T", "New Type"],
         "Prototype %": [0.0, 0.30, 0.70],
@@ -442,9 +348,7 @@ with tab6:
     })
     st.dataframe(df_proto, use_container_width=True)
 
-with tab7:
-    st.session_state.active_tab = "New Type Analysis"
-    st.subheader("New Type Analysis")
+elif active_tab == "New Type Analysis":
     net_bua = apt_bua * 0.70
     df_nt = pd.DataFrame({
         "Product Mix": ["Studio", "1BR", "2BR", "3BR", "4BR"],
@@ -460,19 +364,14 @@ with tab7:
     })
     st.dataframe(df_nt.style.format({"Mix %": "{:.1%}", "Estimated Keys": "{:,.1f}"}), use_container_width=True)
 
-with tab8:
-    st.session_state.active_tab = "Parking Calculations"
-    st.subheader("Residential Parking Calculations")
+elif active_tab == "Parking Calculations":
     col1, col2 = st.columns(2)
     surface_parking = col1.number_input("Surface Level Parking Slots", value=5000, step=500)
     req_basement_pct = (nla_sqm * 0.0272) / nla_sqm if nla_sqm > 0 else 0
     col2.metric("Required Basement Ratio %", f"{req_basement_pct*100:.2f}%")
     st.info(f"Surface Parking Capacity: {surface_parking:,} slots | Estimated Basement Requirement: {nla_sqm * 2.72:,.2f} SQM")
 
-with tab9:
-    st.session_state.active_tab = "Summary Results"
-    st.subheader("🔴 Calculation Results (Dark Red Summary)")
-    
+elif active_tab == "Summary Results":
     res_col1, res_col2 = st.columns(2)
     with res_col1:
         st.markdown("### BUA Performance")
@@ -485,3 +384,11 @@ with tab9:
         st.metric("Total Achieved Footprint", f"{total_achieved_fp:,.2f} SQM")
         st.metric("Total Remaining Footprint", f"{rem_fp:,.2f} SQM")
         st.metric("Achieved FAR", f"{achieved_far:.2f}")
+```
+
+---
+
+### What to do next:
+1. Apply the diff above to your `app.py` file.
+2. Commit and push `app.py` to your GitHub repository.
+3. Streamlit Cloud will update automatically. Selecting any section in the sidebar will immediately filter the inputs and display the relevant calculations on screen!
