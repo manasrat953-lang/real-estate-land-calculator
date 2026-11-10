@@ -75,33 +75,56 @@ st.markdown("---")
 # ---------------------------------------------------------
 st.sidebar.markdown("### 🔴 Input Parameters (Red Cells)")
 
-# Dynamic Area Conversions Engine
+# Dynamic Area Conversions Engine with Session State Persistence
 st.sidebar.subheader("1. Land Data Input Mode")
-input_type = st.sidebar.radio("Primary Area Input", ["GLA", "NLA"], horizontal=True)
-unit_type = st.sidebar.radio("Unit Type", ["Feddans", "SQM"], horizontal=True)
-
-efficiency = st.sidebar.slider("Efficiency Ratio", min_value=0.1, max_value=1.0, value=0.9, step=0.01)
 
 SQM_PER_FEDDAN = 4200.0
 
+# Initialize persistent session state variables
+if "area_mode" not in st.session_state:
+    st.session_state.area_mode = "GLA"
+if "unit_mode" not in st.session_state:
+    st.session_state.unit_mode = "Feddans"
+if "gla_sqm_val" not in st.session_state:
+    st.session_state.gla_sqm_val = 899612.57
+if "efficiency_val" not in st.session_state:
+    st.session_state.efficiency_val = 0.9
+
+input_type = st.sidebar.radio("Primary Area Input", ["GLA", "NLA"], key="area_mode_radio", index=0 if st.session_state.area_mode == "GLA" else 1, horizontal=True)
+unit_type = st.sidebar.radio("Unit Type", ["Feddans", "SQM"], key="unit_mode_radio", index=0 if st.session_state.unit_mode == "Feddans" else 1, horizontal=True)
+
+efficiency = st.sidebar.slider("Efficiency Ratio", min_value=0.1, max_value=1.0, value=st.session_state.efficiency_val, step=0.01)
+st.session_state.efficiency_val = efficiency
+
+# Handle persistent values during mode toggles
 if input_type == "GLA":
     if unit_type == "Feddans":
-        gla_feddans = st.sidebar.number_input("GLA in feddans", value=214.19347, step=1.0, format="%.5f")
+        current_gla_feddans = st.session_state.gla_sqm_val / SQM_PER_FEDDAN
+        gla_feddans = st.sidebar.number_input("GLA in feddans", value=float(current_gla_feddans), step=1.0, format="%.5f")
         gla_sqm = gla_feddans * SQM_PER_FEDDAN
     else:
-        gla_sqm = st.sidebar.number_input("GLA in SQM", value=899612.57, step=1000.0, format="%.2f")
+        gla_sqm = st.sidebar.number_input("GLA in SQM", value=float(st.session_state.gla_sqm_val), step=1000.0, format="%.2f")
         gla_feddans = gla_sqm / SQM_PER_FEDDAN
+    
+    st.session_state.gla_sqm_val = gla_sqm
     nla_sqm = gla_sqm * efficiency
     nla_feddans = gla_feddans * efficiency
 else:
+    current_nla_sqm = st.session_state.gla_sqm_val * efficiency
     if unit_type == "Feddans":
-        nla_feddans = st.sidebar.number_input("NLA in feddans", value=192.77412, step=1.0, format="%.5f")
+        current_nla_feddans = current_nla_sqm / SQM_PER_FEDDAN
+        nla_feddans = st.sidebar.number_input("NLA in feddans", value=float(current_nla_feddans), step=1.0, format="%.5f")
         nla_sqm = nla_feddans * SQM_PER_FEDDAN
     else:
-        nla_sqm = st.sidebar.number_input("NLA in SQM", value=809651.32, step=1000.0, format="%.2f")
+        nla_sqm = st.sidebar.number_input("NLA in SQM", value=float(current_nla_sqm), step=1000.0, format="%.2f")
         nla_feddans = nla_sqm / SQM_PER_FEDDAN
+    
     gla_sqm = nla_sqm / efficiency if efficiency > 0 else 0
     gla_feddans = nla_feddans / efficiency if efficiency > 0 else 0
+    st.session_state.gla_sqm_val = gla_sqm
+
+st.session_state.area_mode = input_type
+st.session_state.unit_mode = unit_type
 
 land_type = st.sidebar.selectbox("Land Type", ["Mixed Use", "Residential", "Commercial"])
 
