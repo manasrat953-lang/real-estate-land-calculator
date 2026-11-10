@@ -485,10 +485,3 @@ with tab9:
         st.metric("Total Achieved Footprint", f"{total_achieved_fp:,.2f} SQM")
         st.metric("Total Remaining Footprint", f"{rem_fp:,.2f} SQM")
         st.metric("Achieved FAR", f"{achieved_far:.2f}")
-```
-
-### Summary of Changes:
-1. **Centered Flex Header**: The logo and "Land Engine" are encapsulated in a centered flex container (`brand-container`).
-2. **Montserrat Font Harmonization**: Set `Montserrat` across all typography elements, input controls, metric widgets, and data tables.
-3. **Tab-Bound Sidebar Inputs**: Selecting any tab on the main screen updates `st.session_state.active_tab`, causing the sidebar to dynamically re-render and display only the inputs associated with that specific section.
-4. **Dark High-Contrast Theme**: Input boxes and dropdown lists have dark backgrounds (`#121212`) with white text (`#FFFFFF`) for optimal readability.
