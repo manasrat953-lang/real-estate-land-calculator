@@ -30,16 +30,24 @@ st.markdown("""
         border-right: 1px solid #222222 !important;
     }
 
-    /* Ensure Sidebar Collapse / Re-open Toggle Icon is ALWAYS Visible */
-    button[data-testid="stSidebarCollapseButton"], 
+    /* Force Streamlit Header & Sidebar Toggle Controls to be ALWAYS Visible */
+    header[data-testid="stHeader"] {
+        background-color: transparent !important;
+        z-index: 100000 !important;
+    }
+    button[data-testid="stSidebarCollapseButton"],
     button[data-testid="baseButton-headerNoPadding"],
-    [data-testid="stSidebarNav"] {
+    [data-testid="collapsedControl"] {
         color: #FFFFFF !important;
-        background-color: #111111 !important;
+        background-color: #222222 !important;
+        border: 1px solid #444444 !important;
         border-radius: 6px !important;
+        visibility: visible !important;
+        display: flex !important;
     }
     button[data-testid="stSidebarCollapseButton"] svg, 
-    button[data-testid="baseButton-headerNoPadding"] svg {
+    button[data-testid="baseButton-headerNoPadding"] svg,
+    [data-testid="collapsedControl"] svg {
         fill: #FFFFFF !important;
         stroke: #FFFFFF !important;
     }
@@ -53,16 +61,15 @@ st.markdown("""
         text-align: center;
         width: 100%;
         margin-top: -1rem;
-        margin-bottom: 1rem;
+        margin-bottom: 0.5rem;
     }
     .brand-title {
-        font-size: 2rem;
+        font-size: 1.6rem;
         color: #FFFFFF !important;
-        font-weight: 700;
+        font-weight: 600;
         text-align: center;
-        margin-top: 0.8rem;
-        letter-spacing: 2.5px;
-        text-transform: uppercase;
+        margin-top: 0.4rem;
+        letter-spacing: 1px;
     }
     .stMetric {
         background-color: #111111 !important;
@@ -88,9 +95,9 @@ st.markdown("""
 col_l, col_center, col_r = st.columns([1, 2, 1])
 with col_center:
     try:
-        st.image("LOGO.png", width=320, use_container_width=True)
+        st.image("LOGO.png", width=160)
     except Exception:
-        st.markdown('<div style="font-size: 2.2rem; font-weight: 800; color: #FFFFFF; text-align: center; letter-spacing: 2px;">MADINET MASR</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size: 1.8rem; font-weight: 800; color: #FFFFFF; text-align: center; letter-spacing: 2px;">Madinet Masr</div>', unsafe_allow_html=True)
     st.markdown('<div class="brand-title">Land Engine</div>', unsafe_allow_html=True)
 
 st.markdown("---")
@@ -111,23 +118,6 @@ if "efficiency_val" not in st.session_state:
 
 def update_efficiency():
     st.session_state.efficiency_val = st.session_state.efficiency_slider
-
-# ---------------------------------------------------------
-# Dynamic Excel-Aligned Navigation Tabs (Declared First)
-# ---------------------------------------------------------
-tab_names = [
-    "Land Data", 
-    "Land Analysis", 
-    "Land Constraints", 
-    "Residential Mix", 
-    "Services Mix", 
-    "Prototypes Analysis", 
-    "New Type Analysis", 
-    "Parking Calculations", 
-    "Summary Results"
-]
-
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs(tab_names)
 
 # Render Context-Aware Sidebar Inputs based on active tab selection
 st.sidebar.markdown("### 🔴 Active Tab Inputs")
@@ -298,9 +288,9 @@ if total_achieved_bua > allowed_bua:
     st.error(f"🚨 **Zoning Constraint Violation:** Achieved BUA ({total_achieved_bua:,.0f} SQM) exceeds Allowed BUA ({allowed_bua:,.0f} SQM)!")
 
 # ---------------------------------------------------------
-# Dynamic Excel-Aligned Navigation Tabs
+# Dynamic Excel-Aligned Navigation Tabs (Declared Once)
 # ---------------------------------------------------------
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
+tab_names = [
     "Land Data", 
     "Land Analysis", 
     "Land Constraints", 
@@ -310,7 +300,9 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
     "New Type Analysis", 
     "Parking Calculations", 
     "Summary Results"
-])
+]
+
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs(tab_names)
 
 with tab1:
     st.subheader("Land Data")
