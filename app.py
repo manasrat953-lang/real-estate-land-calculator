@@ -1,34 +1,49 @@
-<!-- ... existing code -->
-    /* Black Input Box Styling with White Text */
-    div[data-baseweb="input"], div[data-baseweb="select"] > div, div[data-baseweb="base-input"], div[data-baseweb="input"] input {
+import streamlit as st
+import pandas as pd
+import numpy as np
+
+# Page Configuration
+st.set_page_config(
+    page_title="Madinet Masr - Land Engine",
+    page_icon="🏗️",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Dark Theme CSS & Typography Styling
+st.markdown("""
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
+    html, body, [class*="css"], .stApp {
+        font-family: 'Montserrat', 'Helvetica Neue', Arial, sans-serif !important;
         background-color: #000000 !important;
-        border: 1px solid #333333 !important;
         color: #FFFFFF !important;
+    }
+
+    .stSidebar {
+        background-color: #0A0A0A !important;
+        border-right: 1px solid #222222 !important;
+    }
+
+    /* Input Fields Styling (Pitch Black Background with Crisp White Text) */
+    div[data-baseweb="input"] input, 
+    div[data-baseweb="select"] div,
+    div[aria-haspopup="listbox"],
+    input[type="number"], 
+    select {
+        background-color: #000000 !important;
+        color: #FFFFFF !important;
+        border: 1px solid #333333 !important;
         border-radius: 6px !important;
     }
-    input, select, textarea {
-        color: #FFFFFF !important;
-        background-color: #000000 !important;
-    }
-    div[role="listbox"] {
+
+    div[data-baseweb="popover"], div[role="listbox"] {
         background-color: #000000 !important;
         color: #FFFFFF !important;
     }
-    
-    /* Native Sidebar Collapse Button Styling (Prevents Raw Text Leaks) */
-    header[data-testid="stHeader"] {
-        background-color: transparent !important;
-        z-index: 100000 !important;
-    }
-    button[data-testid="stSidebarCollapseButton"] {
-        color: #FFFFFF !important;
-        background-color: #1A1A1A !important;
-        border: 1px solid #333333 !important;
-        border-radius: 6px !important;
-    }
-    button[data-testid="stSidebarCollapseButton"]:hover {
-        background-color: #333333 !important;
-    }
+
+    /* Hide Raw Text Leakage for Icon Button */
     button[data-testid="stSidebarCollapseButton"]::before {
         content: "" !important;
     }
@@ -74,10 +89,6 @@
 # ---------------------------------------------------------
 # Header & Branding Section (Perfectly Centered Logo & Title)
 # ---------------------------------------------------------
-st.markdown("""
-<div class="brand-container">
-""", unsafe_allow_html=True)
-
 col_l, col_center, col_r = st.columns([1, 2, 1])
 with col_center:
     try:
