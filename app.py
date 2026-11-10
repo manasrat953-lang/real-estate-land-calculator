@@ -19,55 +19,49 @@ st.markdown("""
         color: #FFFFFF !important;
     }
     .stApp {
-        background-color: #0F172A;
+        background-color: #000000 !important;
     }
     .stSidebar {
-        background-color: #1E293B;
-        border-right: 1px solid #334155;
+        background-color: #111111 !important;
+        border-right: 1px solid #222222 !important;
     }
-    .brand-sub {
-        font-size: 0.95rem;
-        color: #94A3B8 !important;
-        font-weight: 500;
+    .brand-title {
+        font-size: 1.8rem;
+        color: #FFFFFF !important;
+        font-weight: 700;
+        text-align: center;
+        margin-top: 0.5rem;
         margin-bottom: 1.5rem;
-    }
-    .powered-by {
-        font-size: 0.85rem;
-        color: #94A3B8 !important;
-        text-align: right;
-        font-style: italic;
-        padding-top: 10px;
+        letter-spacing: 1px;
     }
     .stMetric {
-        background-color: #1E293B !important;
-        border: 1px solid #334155 !important;
+        background-color: #111111 !important;
+        border: 1px solid #222222 !important;
         padding: 12px !important;
         border-radius: 8px !important;
     }
     div[data-testid="stMetricValue"] {
-        color: #38BDF8 !important;
+        color: #FFFFFF !important;
         font-size: 1.6rem !important;
     }
     .dataframe {
         color: #FFFFFF !important;
-        background-color: #1E293B !important;
+        background-color: #111111 !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# Header & Branding Section (Using Official Logo)
+# Header & Branding Section (Centered Logo & Land Engine Title)
 # ---------------------------------------------------------
-col_logo, col_powered = st.columns([3, 1])
-with col_logo:
+col_left, col_center, col_right = st.columns([1, 2, 1])
+with col_center:
     try:
         st.image("LOGO.png", width=280)
     except Exception:
-        st.markdown('<div style="font-size: 2rem; font-weight: 800; color: #FFFFFF;">MADINET MASR</div>', unsafe_allow_html=True)
-with col_powered:
-    st.markdown('<div class="powered-by">Powered by <b>Madinet Masr</b></div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size: 2rem; font-weight: 800; color: #FFFFFF; text-align: center;">MADINET MASR</div>', unsafe_allow_html=True)
 
-st.markdown('<div class="brand-sub">Real Estate Land Feasibility & Masterplan Analytics Engine</div>', unsafe_allow_html=True)
+st.markdown('<div class="brand-title">Land Engine</div>', unsafe_allow_html=True)
 st.markdown("---")
 
 # ---------------------------------------------------------
