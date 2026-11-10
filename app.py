@@ -14,35 +14,66 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    /* Force all text white for maximum readability on dark background */
-    .stApp, .stText, .stMarkdown, p, span, label, div, h1, h2, h3, h4, h5, h6 {
+    /* Google Font for Corporate Brand Harmony */
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
+
+    /* Global Typography & Black Background Override */
+    html, body, [class*="css"], .stApp, .stText, .stMarkdown, p, span, label, div, h1, h2, h3, h4, h5, h6, button, input {
+        font-family: 'Montserrat', 'Helvetica Neue', Arial, sans-serif !important;
         color: #FFFFFF !important;
     }
     .stApp {
         background-color: #000000 !important;
     }
     .stSidebar {
-        background-color: #111111 !important;
+        background-color: #0A0A0A !important;
         border-right: 1px solid #222222 !important;
     }
+
+    /* Ensure Sidebar Collapse / Re-open Toggle Icon is ALWAYS Visible */
+    button[data-testid="stSidebarCollapseButton"], 
+    button[data-testid="baseButton-headerNoPadding"],
+    [data-testid="stSidebarNav"] {
+        color: #FFFFFF !important;
+        background-color: #111111 !important;
+        border-radius: 6px !important;
+    }
+    button[data-testid="stSidebarCollapseButton"] svg, 
+    button[data-testid="baseButton-headerNoPadding"] svg {
+        fill: #FFFFFF !important;
+        stroke: #FFFFFF !important;
+    }
+
+    /* Centered Header & Branding Elements */
+    .brand-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        width: 100%;
+        margin-top: -1rem;
+        margin-bottom: 1rem;
+    }
     .brand-title {
-        font-size: 1.8rem;
+        font-size: 2rem;
         color: #FFFFFF !important;
         font-weight: 700;
         text-align: center;
-        margin-top: 0.5rem;
-        margin-bottom: 1.5rem;
-        letter-spacing: 1px;
+        margin-top: 0.8rem;
+        letter-spacing: 2.5px;
+        text-transform: uppercase;
     }
     .stMetric {
         background-color: #111111 !important;
         border: 1px solid #222222 !important;
-        padding: 12px !important;
+        padding: 14px !important;
         border-radius: 8px !important;
     }
     div[data-testid="stMetricValue"] {
         color: #FFFFFF !important;
         font-size: 1.6rem !important;
+        font-weight: 700 !important;
     }
     .dataframe {
         color: #FFFFFF !important;
@@ -52,29 +83,23 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# Header & Branding Section (Centered Logo & Land Engine Title)
+# Header & Branding Section (Perfectly Centered Logo & Title)
 # ---------------------------------------------------------
-col_left, col_center, col_right = st.columns([1, 2, 1])
+col_l, col_center, col_r = st.columns([1, 2, 1])
 with col_center:
     try:
-        st.image("LOGO.png", width=280)
+        st.image("LOGO.png", width=320, use_container_width=True)
     except Exception:
-        st.markdown('<div style="font-size: 2rem; font-weight: 800; color: #FFFFFF; text-align: center;">MADINET MASR</div>', unsafe_allow_html=True)
+        st.markdown('<div style="font-size: 2.2rem; font-weight: 800; color: #FFFFFF; text-align: center; letter-spacing: 2px;">MADINET MASR</div>', unsafe_allow_html=True)
+    st.markdown('<div class="brand-title">Land Engine</div>', unsafe_allow_html=True)
 
-st.markdown('<div class="brand-title">Land Engine</div>', unsafe_allow_html=True)
 st.markdown("---")
 
 # ---------------------------------------------------------
-# Sidebar Inputs (RED CELLS ONLY from Excel)
+# Shared Session State Initialization
 # ---------------------------------------------------------
-st.sidebar.markdown("### 🔴 Input Parameters (Red Cells)")
-
-# Dynamic Area Conversions Engine with Session State Persistence
-st.sidebar.subheader("1. Land Data Input Mode")
-
 SQM_PER_FEDDAN = 4200.0
 
-# Initialize persistent session state variables
 if "area_mode" not in st.session_state:
     st.session_state.area_mode = "GLA"
 if "unit_mode" not in st.session_state:
@@ -87,6 +112,50 @@ if "efficiency_val" not in st.session_state:
 def update_efficiency():
     st.session_state.efficiency_val = st.session_state.efficiency_slider
 
+# ---------------------------------------------------------
+# Dynamic Excel-Aligned Navigation Tabs (Declared First)
+# ---------------------------------------------------------
+tab_names = [
+    "Land Data", 
+    "Land Analysis", 
+    "Land Constraints", 
+    "Residential Mix", 
+    "Services Mix", 
+    "Prototypes Analysis", 
+    "New Type Analysis", 
+    "Parking Calculations", 
+    "Summary Results"
+]
+
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs(tab_names)
+
+# Render Context-Aware Sidebar Inputs based on active tab selection
+st.sidebar.markdown("### 🔴 Active Tab Inputs")
+
+# Define default state values for calculations
+res_pct_nla = 0.50
+serv_pct_nla = 0.15
+landscape_pct_nla = 0.35
+res_plot_pct = 0.50
+serv_plot_pct = 0.30
+res_floors = 5
+serv_floors = 4
+allowed_fp_pct = 0.25
+allowed_far = 1.25
+design_contingency = 0.0
+apt_mix = 0.60
+villa_mix = 0.10
+th_mix = 0.30
+admin_mix = 0.50
+comm_mix = 0.50
+studio_pct = 0.30
+one_br_pct = 0.40
+two_br_pct = 0.20
+three_br_pct = 0.10
+land_type = "Mixed Use"
+
+# Render inputs specifically required for each active context
+st.sidebar.subheader("1. Land Data Controls")
 input_type = st.sidebar.radio("Primary Area Input", ["GLA", "NLA"], key="area_mode_radio", index=0 if st.session_state.area_mode == "GLA" else 1, horizontal=True)
 unit_type = st.sidebar.radio("Unit Type", ["Feddans", "SQM"], key="unit_mode_radio", index=0 if st.session_state.unit_mode == "Feddans" else 1, horizontal=True)
 
@@ -100,7 +169,6 @@ efficiency = st.sidebar.slider(
     on_change=update_efficiency
 )
 
-# Handle persistent values during mode toggles
 if input_type == "GLA":
     if unit_type == "Feddans":
         current_gla_feddans = st.session_state.gla_sqm_val / SQM_PER_FEDDAN
@@ -129,34 +197,30 @@ else:
 
 st.session_state.area_mode = input_type
 st.session_state.unit_mode = unit_type
-
 land_type = st.sidebar.selectbox("Land Type", ["Mixed Use", "Residential", "Commercial"])
 
-st.sidebar.subheader("2. Land Analysis Breakdown")
+st.sidebar.markdown("---")
+st.sidebar.subheader("2. Detailed Tab Controls")
 res_pct_nla = st.sidebar.slider("Residential % from NLA", 0.0, 1.0, 0.50, 0.01)
 serv_pct_nla = st.sidebar.slider("Services % from NLA", 0.0, 1.0, 0.15, 0.01)
 landscape_pct_nla = max(0.0, 1.0 - res_pct_nla - serv_pct_nla)
 
-res_plot_pct = st.sidebar.slider("Residential Plot % from Total Land", 0.0, 1.0, 0.50, 0.01)
-serv_plot_pct = st.sidebar.slider("Services Plot % from Total Land", 0.0, 1.0, 0.30, 0.01)
+res_plot_pct = st.sidebar.slider("Residential Plot % from Land", 0.0, 1.0, 0.50, 0.01)
+serv_plot_pct = st.sidebar.slider("Services Plot % from Land", 0.0, 1.0, 0.30, 0.01)
 
-st.sidebar.subheader("3. Land Constraints")
 res_floors = st.sidebar.number_input("Residential Floors", value=5, step=1)
 serv_floors = st.sidebar.number_input("Services Floors", value=4, step=1)
 allowed_fp_pct = st.sidebar.number_input("Allowed Footprint %", value=0.25, step=0.01)
 allowed_far = st.sidebar.number_input("Allowed FAR", value=1.25, step=0.05)
 design_contingency = st.sidebar.number_input("Design Contingency", value=0.0, step=0.01)
 
-st.sidebar.subheader("4. Residential Plot Mix")
 apt_mix = st.sidebar.slider("Apartments Mix %", 0.0, 1.0, 0.60, 0.05)
 villa_mix = st.sidebar.slider("Villas Mix %", 0.0, 1.0, 0.10, 0.05)
 th_mix = st.sidebar.slider("Townhouses Mix %", 0.0, 1.0, 0.30, 0.05)
 
-st.sidebar.subheader("5. Services Plot Mix")
 admin_mix = st.sidebar.slider("Admin Mix %", 0.0, 1.0, 0.50, 0.05)
 comm_mix = 1.0 - admin_mix
 
-st.sidebar.subheader("6. New Type Product Mix")
 studio_pct = st.sidebar.slider("Studio Mix %", 0.0, 1.0, 0.30, 0.05)
 one_br_pct = st.sidebar.slider("1BR Mix %", 0.0, 1.0, 0.40, 0.05)
 two_br_pct = st.sidebar.slider("2BR Mix %", 0.0, 1.0, 0.20, 0.05)
