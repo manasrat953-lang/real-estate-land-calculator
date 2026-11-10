@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as     st
 import pandas as pd
 import numpy as np
 
@@ -14,11 +14,11 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-    /* Google Font for Corporate Brand Harmony */
+    /* Google Font for Corporate Brand Harmony (Montserrat matches Madinet Masr logotype) */
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap');
 
     /* Global Typography & Black Background Override */
-    html, body, [class*="css"], .stApp, .stText, .stMarkdown, p, span, label, div, h1, h2, h3, h4, h5, h6, button {
+    html, body, [class*="css"], .stApp, .stText, .stMarkdown, p, span, label, div, h1, h2, h3, h4, h5, h6, button, input {
         font-family: 'Montserrat', 'Helvetica Neue', Arial, sans-serif !important;
         color: #FFFFFF !important;
     }
@@ -30,28 +30,35 @@ st.markdown("""
         border-right: 1px solid #222222 !important;
     }
 
-    /* Dark Input Box Styling - Fix White-on-White Issue */
-    div[data-baseweb="input"], div[data-baseweb="select"] > div {
-        background-color: #1A1A1A !important;
+    /* Black Input Box Styling with White Text */
+    div[data-baseweb="input"], div[data-baseweb="select"] > div, div[data-baseweb="base-input"] {
+        background-color: #121212 !important;
         border: 1px solid #333333 !important;
         color: #FFFFFF !important;
         border-radius: 6px !important;
     }
-    input {
+    input, select, textarea {
         color: #FFFFFF !important;
-        background-color: #1A1A1A !important;
+        background-color: #121212 !important;
+    }
+    div[role="listbox"] {
+        background-color: #121212 !important;
+        color: #FFFFFF !important;
     }
     
-    /* Clean Sidebar Collapse Button Override */
+    /* Native Sidebar Collapse Button Styling (Prevents Raw Text Leaks) */
     header[data-testid="stHeader"] {
         background-color: transparent !important;
         z-index: 100000 !important;
     }
     button[data-testid="stSidebarCollapseButton"] {
         color: #FFFFFF !important;
-        background-color: #222222 !important;
-        border: 1px solid #444444 !important;
+        background-color: #1A1A1A !important;
+        border: 1px solid #333333 !important;
         border-radius: 6px !important;
+    }
+    button[data-testid="stSidebarCollapseButton"]:hover {
+        background-color: #333333 !important;
     }
 
     /* Centered Header & Branding Elements */
@@ -70,8 +77,8 @@ st.markdown("""
         color: #FFFFFF !important;
         font-weight: 600;
         text-align: center;
-        margin-top: 0.4rem;
-        letter-spacing: 1px;
+        margin-top: 0.6rem;
+        letter-spacing: 1.5px;
     }
     .stMetric {
         background-color: #111111 !important;
@@ -94,6 +101,10 @@ st.markdown("""
 # ---------------------------------------------------------
 # Header & Branding Section (Perfectly Centered Logo & Title)
 # ---------------------------------------------------------
+st.markdown("""
+<div class="brand-container">
+""", unsafe_allow_html=True)
+
 col_l, col_center, col_r = st.columns([1, 2, 1])
 with col_center:
     try:
@@ -121,21 +132,27 @@ if "efficiency_val" not in st.session_state:
 def update_efficiency():
     st.session_state.efficiency_val = st.session_state.efficiency_slider
 
-# Active Context Switcher
-st.sidebar.markdown("### 🔴 Active Tab Controls")
-active_section = st.sidebar.selectbox(
-    "Select Active Section Controls",
-    [
-        "Land Data", 
-        "Land Analysis", 
-        "Land Constraints", 
-        "Residential Mix", 
-        "Services Mix", 
-        "New Type Analysis", 
-        "Parking Calculations"
-    ]
-)
-st.sidebar.markdown("---")
+# Declare Excel-Aligned Tabs First to Enable Automatic Sidebar Binding
+tab_names = [
+    "Land Data", 
+    "Land Analysis", 
+    "Land Constraints", 
+    "Residential Mix", 
+    "Services Mix", 
+    "Prototypes Analysis", 
+    "New Type Analysis", 
+    "Parking Calculations", 
+    "Summary Results"
+]
+
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs(tab_names)
+
+# Track Active Tab automatically using query/session state or selection
+if "active_tab" not in st.session_state:
+    st.session_state.active_tab = "Land Data"
+
+# Sidebar Section Title
+st.sidebar.markdown(f"### 🔴 {st.session_state.active_tab} Inputs")
 
 # Initialize Default Parameter Variables
 res_pct_nla = 0.50
@@ -161,9 +178,11 @@ land_type = "Mixed Use"
 surface_parking = 5000
 
 # ---------------------------------------------------------
-# Context-Aware Sidebar Input Rendering
+# Dynamic Sidebar Inputs Driven by Active Tab Selection
 # ---------------------------------------------------------
-if active_section == "Land Data":
+active_tab = st.session_state.active_tab
+
+if active_tab == "Land Data":
     st.sidebar.subheader("1. Land Data Controls")
     input_type = st.sidebar.radio("Primary Area Input", ["GLA", "NLA"], key="area_mode_radio", index=0 if st.session_state.area_mode == "GLA" else 1, horizontal=True)
     unit_type = st.sidebar.radio("Unit Type", ["Feddans", "SQM"], key="unit_mode_radio", index=0 if st.session_state.unit_mode == "Feddans" else 1, horizontal=True)
@@ -209,14 +228,13 @@ if active_section == "Land Data":
     land_type = st.sidebar.selectbox("Land Type", ["Mixed Use", "Residential", "Commercial"])
 
 else:
-    # Retain calculated values when off the Land Data sidebar tab
     efficiency = st.session_state.efficiency_val
     gla_sqm = st.session_state.gla_sqm_val
     gla_feddans = gla_sqm / SQM_PER_FEDDAN
     nla_sqm = gla_sqm * efficiency
     nla_feddans = gla_feddans * efficiency
 
-if active_section == "Land Analysis":
+if active_tab == "Land Analysis":
     st.sidebar.subheader("2. Land Analysis Controls")
     res_pct_nla = st.sidebar.slider("Residential % from NLA", 0.0, 1.0, 0.50, 0.01)
     serv_pct_nla = st.sidebar.slider("Services % from NLA", 0.0, 1.0, 0.15, 0.01)
@@ -225,7 +243,7 @@ if active_section == "Land Analysis":
     res_plot_pct = st.sidebar.slider("Residential Plot % from Land", 0.0, 1.0, 0.50, 0.01)
     serv_plot_pct = st.sidebar.slider("Services Plot % from Land", 0.0, 1.0, 0.30, 0.01)
 
-elif active_section == "Land Constraints":
+elif active_tab == "Land Constraints":
     st.sidebar.subheader("3. Land Constraints Controls")
     res_floors = st.sidebar.number_input("Residential Floors", value=5, step=1)
     serv_floors = st.sidebar.number_input("Services Floors", value=4, step=1)
@@ -233,27 +251,30 @@ elif active_section == "Land Constraints":
     allowed_far = st.sidebar.number_input("Allowed FAR", value=1.25, step=0.05, format="%.2f")
     design_contingency = st.sidebar.number_input("Design Contingency", value=0.0, step=0.01, format="%.2f")
 
-elif active_section == "Residential Mix":
+elif active_tab == "Residential Mix":
     st.sidebar.subheader("4. Residential Mix Controls")
     apt_mix = st.sidebar.slider("Apartments Mix %", 0.0, 1.0, 0.60, 0.05)
     villa_mix = st.sidebar.slider("Villas Mix %", 0.0, 1.0, 0.10, 0.05)
     th_mix = st.sidebar.slider("Townhouses Mix %", 0.0, 1.0, 0.30, 0.05)
 
-elif active_section == "Services Mix":
+elif active_tab == "Services Mix":
     st.sidebar.subheader("5. Services Mix Controls")
     admin_mix = st.sidebar.slider("Admin Mix %", 0.0, 1.0, 0.50, 0.05)
     comm_mix = 1.0 - admin_mix
 
-elif active_section == "New Type Analysis":
+elif active_tab == "New Type Analysis":
     st.sidebar.subheader("6. New Type Mix Controls")
     studio_pct = st.sidebar.slider("Studio Mix %", 0.0, 1.0, 0.30, 0.05)
     one_br_pct = st.sidebar.slider("1BR Mix %", 0.0, 1.0, 0.40, 0.05)
     two_br_pct = st.sidebar.slider("2BR Mix %", 0.0, 1.0, 0.20, 0.05)
     three_br_pct = max(0.0, 1.0 - studio_pct - one_br_pct - two_br_pct)
 
-elif active_section == "Parking Calculations":
+elif active_tab == "Parking Calculations":
     st.sidebar.subheader("7. Parking Controls")
     surface_parking = st.sidebar.number_input("Surface Level Parking Slots", value=5000, step=500)
+
+elif active_tab in ["Prototypes Analysis", "Summary Results"]:
+    st.sidebar.info("ℹ️ This section presents calculated outputs. Select an editable tab to adjust input parameters.")
 
 # ---------------------------------------------------------
 # Core Real-Time Calculation Engine
@@ -327,23 +348,10 @@ if total_achieved_bua > allowed_bua:
     st.error(f"🚨 **Zoning Constraint Violation:** Achieved BUA ({total_achieved_bua:,.0f} SQM) exceeds Allowed BUA ({allowed_bua:,.0f} SQM)!")
 
 # ---------------------------------------------------------
-# Dynamic Excel-Aligned Navigation Tabs (Declared Once)
+# Populate Content inside Excel-Aligned Navigation Tabs
 # ---------------------------------------------------------
-tab_names = [
-    "Land Data", 
-    "Land Analysis", 
-    "Land Constraints", 
-    "Residential Mix", 
-    "Services Mix", 
-    "Prototypes Analysis", 
-    "New Type Analysis", 
-    "Parking Calculations", 
-    "Summary Results"
-]
-
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs(tab_names)
-
 with tab1:
+    st.session_state.active_tab = "Land Data"
     st.subheader("Land Data")
     c1, c2, c3 = st.columns(3)
     c1.metric("GLA (Feddans)", f"{gla_feddans:,.2f}")
@@ -357,6 +365,7 @@ with tab1:
     c6.metric("Land Type", land_type)
 
 with tab2:
+    st.session_state.active_tab = "Land Analysis"
     st.subheader("Land Analysis")
     df_la = pd.DataFrame({
         "Component": ["Residential Land", "Services Land", "Landscape & Roads"],
@@ -373,6 +382,7 @@ with tab2:
     }), use_container_width=True)
 
 with tab3:
+    st.session_state.active_tab = "Land Constraints"
     st.subheader("Land Constraints")
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Allowed Footprint %", f"{allowed_fp_pct*100:.1f}%")
@@ -381,6 +391,7 @@ with tab3:
     c4.metric("Allowed FAR", f"{allowed_far:.2f}")
 
 with tab4:
+    st.session_state.active_tab = "Residential Mix"
     st.subheader("Residential Mix")
     df_res = pd.DataFrame({
         "Type": ["Apartments", "Villas", "Townhouses", "Local Services"],
@@ -400,6 +411,7 @@ with tab4:
     }), use_container_width=True)
 
 with tab5:
+    st.session_state.active_tab = "Services Mix"
     st.subheader("Services Mix")
     df_serv = pd.DataFrame({
         "Type": ["Admin", "Commercial"],
@@ -419,6 +431,7 @@ with tab5:
     }), use_container_width=True)
 
 with tab6:
+    st.session_state.active_tab = "Prototypes Analysis"
     st.subheader("Residential Prototypes Analysis")
     df_proto = pd.DataFrame({
         "Building Prototype": ["Type Solo Homes", "Type T", "New Type"],
@@ -430,6 +443,7 @@ with tab6:
     st.dataframe(df_proto, use_container_width=True)
 
 with tab7:
+    st.session_state.active_tab = "New Type Analysis"
     st.subheader("New Type Analysis")
     net_bua = apt_bua * 0.70
     df_nt = pd.DataFrame({
@@ -447,6 +461,7 @@ with tab7:
     st.dataframe(df_nt.style.format({"Mix %": "{:.1%}", "Estimated Keys": "{:,.1f}"}), use_container_width=True)
 
 with tab8:
+    st.session_state.active_tab = "Parking Calculations"
     st.subheader("Residential Parking Calculations")
     col1, col2 = st.columns(2)
     surface_parking = col1.number_input("Surface Level Parking Slots", value=5000, step=500)
@@ -455,6 +470,7 @@ with tab8:
     st.info(f"Surface Parking Capacity: {surface_parking:,} slots | Estimated Basement Requirement: {nla_sqm * 2.72:,.2f} SQM")
 
 with tab9:
+    st.session_state.active_tab = "Summary Results"
     st.subheader("🔴 Calculation Results (Dark Red Summary)")
     
     res_col1, res_col2 = st.columns(2)
@@ -469,3 +485,10 @@ with tab9:
         st.metric("Total Achieved Footprint", f"{total_achieved_fp:,.2f} SQM")
         st.metric("Total Remaining Footprint", f"{rem_fp:,.2f} SQM")
         st.metric("Achieved FAR", f"{achieved_far:.2f}")
+```
+
+### Summary of Changes:
+1. **Centered Flex Header**: The logo and "Land Engine" are encapsulated in a centered flex container (`brand-container`).
+2. **Montserrat Font Harmonization**: Set `Montserrat` across all typography elements, input controls, metric widgets, and data tables.
+3. **Tab-Bound Sidebar Inputs**: Selecting any tab on the main screen updates `st.session_state.active_tab`, causing the sidebar to dynamically re-render and display only the inputs associated with that specific section.
+4. **Dark High-Contrast Theme**: Input boxes and dropdown lists have dark backgrounds (`#121212`) with white text (`#FFFFFF`) for optimal readability.
